@@ -6,20 +6,14 @@ import concurrent.futures
 from datetime import datetime
 
 from threading import Thread
+import csv
+import random
 
 localhost_url = 'http://localhost:3000/api'
 
-# deve retornar um vetor contendo os CPFS 
-# def criar_portadores(quantidade, emissor):
-    # a partir da quantidade, gerar nomes e cpfs aleatorios para os portadores
-
-# deve retornar um vetor contendo os numeros dos cartoes
-# def criar_cartoes(cpfs):
-    # a partir do vetor com os cpfs, criar os cartoes para eles.
-
-# Cadastrar Emissor
 headers = {'content-type': 'application/json'}
 
+# cadastra o emissor
 payload_emissor = {
     '$class': 'org.conductor.blockchain.Emissor',
     'emissorId': 'Renner',
@@ -27,147 +21,73 @@ payload_emissor = {
 }
 r = requests.post(localhost_url + "/org.conductor.blockchain.Emissor", data=json.dumps(payload_emissor), headers=headers)
 
-# Cadastrar Portador
-payload_portador = {
-    '$class': 'org.conductor.blockchain.CadastrarPortador',
-    'cpf': '00000000000',
-    'nome': 'Ze',
-    'sobrenome': 'Silva',
-    'endereco': 'CI'
-}
-r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload_portador), headers=headers)
-
-payload_portador = {
-    '$class': 'org.conductor.blockchain.CadastrarPortador',
-    'cpf': '11111111111',
-    'nome': 'Joao',
-    'sobrenome': 'Silva',
-    'endereco': 'CI'
-}
-r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload_portador), headers=headers)
-
-payload_portador = {
-    '$class': 'org.conductor.blockchain.CadastrarPortador',
-    'cpf': '22222222222',
-    'nome': 'Luiz',
-    'sobrenome': 'Silva',
-    'endereco': 'CI'
-}
-r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload_portador), headers=headers)
-
-payload_portador = {
-    '$class': 'org.conductor.blockchain.CadastrarPortador',
-    'cpf': '33333333333',
-    'nome': 'Silvia',
-    'sobrenome': 'Silva',
-    'endereco': 'CI'
-}
-r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload_portador), headers=headers)
-
-payload_portador = {
-    '$class': 'org.conductor.blockchain.CadastrarPortador',
-    'cpf': '44444444444',
-    'nome': 'Maria',
-    'sobrenome': 'Silva',
-    'endereco': 'CI'
-}
-r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload_portador), headers=headers)
-
-# Cadastrar Cartão
-payload_cartao = {
-    '$class': 'org.conductor.blockchain.CadastrarCartao',
-    'emissor': 'resource:org.conductor.blockchain.Emissor#Renner',
-    'portador': 'resource:org.conductor.blockchain.Portador#00000000000',
-    'numCartao': '5555555555555555',
-    'estado': 'ATIVO',
-    'limiteCreditoMaximo': 99999,
-    'senha': '1234',
-    'cvv': '123',
-    'bandeira': 'Visa',
-    'diaVencimento': 31,
-    'mesValidade': 12,
-    'anoValidade': 2050
-}
-r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarCartao', data=json.dumps(payload_cartao), headers=headers)
-
-payload_cartao = {
-    '$class': 'org.conductor.blockchain.CadastrarCartao',
-    'emissor': 'resource:org.conductor.blockchain.Emissor#Renner',
-    'portador': 'resource:org.conductor.blockchain.Portador#11111111111',
-    'numCartao': '6666666666666666',
-    'estado': 'ATIVO',
-    'limiteCreditoMaximo': 99999,
-    'senha': '1234',
-    'cvv': '123',
-    'bandeira': 'Visa',
-    'diaVencimento': 31,
-    'mesValidade': 12,
-    'anoValidade': 2050
-}
-r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarCartao', data=json.dumps(payload_cartao), headers=headers)
-
-payload_cartao = {
-    '$class': 'org.conductor.blockchain.CadastrarCartao',
-    'emissor': 'resource:org.conductor.blockchain.Emissor#Renner',
-    'portador': 'resource:org.conductor.blockchain.Portador#22222222222',
-    'numCartao': '7777777777777777',
-    'estado': 'ATIVO',
-    'limiteCreditoMaximo': 99999,
-    'senha': '1234',
-    'cvv': '123',
-    'bandeira': 'Visa',
-    'diaVencimento': 31,
-    'mesValidade': 12,
-    'anoValidade': 2050
-}
-r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarCartao', data=json.dumps(payload_cartao), headers=headers)
-
-payload_cartao = {
-    '$class': 'org.conductor.blockchain.CadastrarCartao',
-    'emissor': 'resource:org.conductor.blockchain.Emissor#Renner',
-    'portador': 'resource:org.conductor.blockchain.Portador#33333333333',
-    'numCartao': '8888888888888888',
-    'estado': 'ATIVO',
-    'limiteCreditoMaximo': 99999,
-    'senha': '1234',
-    'cvv': '123',
-    'bandeira': 'Visa',
-    'diaVencimento': 31,
-    'mesValidade': 12,
-    'anoValidade': 2050
-}
-r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarCartao', data=json.dumps(payload_cartao), headers=headers)
-
-payload_cartao = {
-    '$class': 'org.conductor.blockchain.CadastrarCartao',
-    'emissor': 'resource:org.conductor.blockchain.Emissor#Renner',
-    'portador': 'resource:org.conductor.blockchain.Portador#44444444444',
-    'numCartao': '9999999999999999',
-    'estado': 'ATIVO',
-    'limiteCreditoMaximo': 99999,
-    'senha': '1234',
-    'cvv': '123',
-    'bandeira': 'Visa',
-    'diaVencimento': 31,
-    'mesValidade': 12,
-    'anoValidade': 2050
-}
-r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarCartao', data=json.dumps(payload_cartao), headers=headers)
-
-# Realizar compras
-async def main():
+# deve retornar um vetor contendo os CPFS 
+def criar_portadores(quantidade):
     
-    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+    if quantidade > 200: 
+        quantidade = 200
+    
+    cpfs = []
 
-        loop = asyncio.get_event_loop()
+    with open('pessoas.csv', newline='') as csvfile:
+        spamreader = csv.reader(csvfile, delimiter=',', quotechar='"')           
+       
+        for i in range(quantidade+1):
+            if i == 0:
+                row = spamreader.__next__()
+                continue 
+            
+            row = spamreader.__next__()
+            row[0] = row[0].replace(' ', '')
+            row[1] = row[1].replace(' ', '')
+            row[2] = row[2].replace('.', '').replace('-', '')            
+            #print(row)
+            cpfs.append(row[2])
+            payload_portador = {
+                '$class': 'org.conductor.blockchain.CadastrarPortador',
+                'cpf': row[2],
+                'nome': row[0],
+                'sobrenome': row[1],
+                'endereco': 'CI'
+            }
+            r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload_portador), headers=headers)
+    
+    return cpfs
+
+# deve retornar um vetor contendo os numeros dos cartoes (retornando em inteiro).
+def criar_cartoes(cpfs):
+    
+    cards = random.sample(range(1000, 9999), len(cpfs))
+
+    for i in range(len(cpfs)):       
+        payload_cartao = {
+            '$class': 'org.conductor.blockchain.CadastrarCartao',
+            'emissor': 'resource:org.conductor.blockchain.Emissor#Renner',
+            'portador': 'resource:org.conductor.blockchain.Portador#'+cpfs[i],
+            'numCartao': str(cards[i]),
+            'estado': 'ATIVO',
+            'limiteCreditoMaximo': 99999,
+            'senha': '1234',
+            'cvv': '123',
+            'bandeira': 'Visa',
+            'diaVencimento': 31,
+            'mesValidade': 12,
+            'anoValidade': 2050
+        }
+        r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarCartao', data=json.dumps(payload_cartao), headers=headers)
+
+    return cards
+
+# 
+async def realizar_compras(cards):
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(cards)) as executor:        
         
-        def multiplas_compras(id):
-            arr_num_card = ['5555555555555555', '6666666666666666', '7777777777777777', '8888888888888888', '9999999999999999']            
-            dt = str(datetime.utcnow().isoformat())    
-            card = 'resource:org.conductor.blockchain.CartaoCredito#' + arr_num_card[id]
+        def multiplas_compras(id):               
+            dt = str(datetime.utcnow().isoformat())                    
             payload = {
                 '$class': 'org.conductor.blockchain.RealizarCompra',
-                'cartao': card,
+                'cartao': 'resource:org.conductor.blockchain.CartaoCredito#'+str(cards[id]),
                 'destino': 'boteco',
                 'senha': '1234',
                 'cvv': '123',
@@ -179,23 +99,26 @@ async def main():
                 'moeda': 'BRL',
                 'data': dt
             }
-            print(payload)
+            #print(payload)
             return requests.post(localhost_url + '/org.conductor.blockchain.RealizarCompra', data=json.dumps(payload), headers={'content-type': 'application/json'})
-       
+        
+        loop = asyncio.get_event_loop()
         futures = [
             loop.run_in_executor(
                 executor, 
                 multiplas_compras,
                 i
             )
-            for i in range(5)
+            for i in range(len(cards))
         ]
         for response in await asyncio.gather(*futures):
-            pass
+            pass    
 
 
+cpfs = criar_portadores(20)
+cards = criar_cartoes(cpfs)
 loop = asyncio.get_event_loop()
-loop.run_until_complete(main())
+loop.run_until_complete(realizar_compras(cards))
 
 '''
 def realizar_compras(id, num_card):
