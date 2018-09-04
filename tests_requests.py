@@ -21,7 +21,7 @@ payload_emissor = {
 }
 r = requests.post(localhost_url + "/org.conductor.blockchain.Emissor", data=json.dumps(payload_emissor), headers=headers)
 
-# deve retornar um vetor contendo os CPFS 
+# deve retornar um vetor contendo os CPFS (retornando em string).
 def criar_portadores(quantidade):
     
     if quantidade > 200: 
@@ -84,7 +84,9 @@ async def realizar_compras(cards):
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(cards)) as executor:        
         
         def multiplas_compras(id):               
-            dt = str(datetime.utcnow().isoformat())                    
+            dt = str(datetime.utcnow().isoformat()) 
+            valor = random.randint(20, 200)
+            # parcelas = str(random.randint(1, 3))
             payload = {
                 '$class': 'org.conductor.blockchain.RealizarCompra',
                 'cartao': 'resource:org.conductor.blockchain.CartaoCredito#'+str(cards[id]),
@@ -95,7 +97,7 @@ async def realizar_compras(cards):
                 'mesValidade': 12,
                 'anoValidade': 2050,
                 'parcelas': '1',
-                'valor': id,
+                'valor': valor,
                 'moeda': 'BRL',
                 'data': dt
             }
