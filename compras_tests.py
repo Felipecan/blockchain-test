@@ -1,22 +1,21 @@
 # -*- coding: utf-8 -*-
-import json
-import requests
-import asyncio
-import concurrent.futures
-from datetime import datetime
-
-from threading import Thread
-import csv
-import random
-
+'''
+    Testando o teste.
+'''
 import time
-'''
-    
-'''
-
-#from tests_requests import *
+import timeit
+import asyncio
 import blockchain_tests
 
-#print(blockchain_tests.criar_portadores.__doc__)
-#print(blockchain_tests.criar_cartoes.__doc__)
-print(blockchain_tests.realizar_compras.__doc__)
+all_cards = blockchain_tests.get_all_cards()
+cards = all_cards
+# blockchain_tests.cadastrar_emissor('Renner')
+# cpfs = blockchain_tests.criar_portadores(50)
+# cards = blockchain_tests.criar_cartoes(cpfs)
+
+loop = asyncio.get_event_loop()
+i = timeit.default_timer()
+#loop.run_until_complete(blockchain_tests.realizar_compras(cards))
+blockchain_tests.realizar_compras(cards, i)
+f = timeit.default_timer()
+print('fim: ', f - i)
