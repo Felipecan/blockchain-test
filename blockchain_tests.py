@@ -188,24 +188,6 @@ def criar_cartoes(cpfs):
 #         for response in await asyncio.gather(*futures):            
 #             pass   
 
-def get_all_cards():
-    '''
-        Descrição:
-            A função acessa a API e retorna todos os cartões cadastrados.
-
-        Utilização:
-            get_all_cards()
-
-        Retorno:
-            Retorna uma lista de strings com todos os cartões cadastrados.
-    '''  
-    cards = []
-    r = requests.get(localhost_url + '/org.conductor.blockchain.CadastrarCartao')
-    j = r.json()
-    for i in range(len(j)):
-        cards.append(j[i]['numCartao'])
-    return cards
-
 def realizar_compra(id, card, t_i):
     dt = str(datetime.utcnow().isoformat()) 
     valor = random.randint(20, 200)                        
@@ -226,17 +208,43 @@ def realizar_compra(id, card, t_i):
     }
     r = requests.post(localhost_url + '/org.conductor.blockchain.RealizarCompra', data=json.dumps(payload), headers={'content-type': 'application/json'})
     
-    print('ID: ', id)
-    print('time: ', timeit.default_timer() - t_i)
-    print('response: ', r.status_code)
+    # print('ID: ', id)
+    # print('time: ', timeit.default_timer() - t_i)
+    # print('response: ', r.status_code)
 
 def realizar_compras(cards, t_i):
     list_t = []
+
     for i in range(len(cards)):
         list_t.append(Thread(target=realizar_compra, args=[(i+1), cards[i], t_i]))
-
+    
     for i in range(len(cards)):
         list_t[i].start()
 
     # for i in range(len(cards)):
     #     list_t[i].join()
+
+
+# auxiliares
+def get_all_cards():
+    '''
+        Descrição:
+            A função acessa a API e retorna todos os cartões cadastrados.
+
+        Utilização:
+            get_all_cards()
+
+        Retorno:
+            Retorna uma lista de strings com todos os cartões cadastrados.
+    '''  
+    cards = []
+    r = requests.get(localhost_url + '/org.conductor.blockchain.CadastrarCartao')
+    j = r.json()
+    for i in range(len(j)):
+        cards.append(j[i]['numCartao'])
+    return cards
+
+def get_all_compras():
+    r = requests.get(localhost_url + '/org.conductor.blockchain.RealizarCompra')
+    jsons = r.json()
+    return jsons
