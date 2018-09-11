@@ -240,4 +240,3 @@ def realizar_compras(cards, t_i):
 
     # for i in range(len(cards)):
     #     list_t[i].join()
-

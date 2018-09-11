@@ -8,4 +8,7 @@
 
 ## Executando o código:
 
-* python3.5 arquivo.py
+* python3.5 cadastrar_cartoes.py
+* python3.5 compras_tests.py
+
+# Esse tutorial ainda vai ser atualizado corretamente.

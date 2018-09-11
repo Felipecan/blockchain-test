@@ -8,5 +8,5 @@ import asyncio
 import blockchain_tests
 
 blockchain_tests.cadastrar_emissor('Renner')
-cpfs = blockchain_tests.criar_portadores(200)
+cpfs = blockchain_tests.criar_portadores(50)
 cards = blockchain_tests.criar_cartoes(cpfs)
