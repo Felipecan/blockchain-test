@@ -22,6 +22,7 @@ def cadastrar_emissor(emissor):
         'cnpj': '99999999999999'
     }
     r = requests.post(localhost_url + "/org.conductor.blockchain.Emissor", data=json.dumps(payload_emissor), headers={'content-type': 'application/json'})
+    print ('Emissor criado:', emissor)
 
 def criar_portadores(quantidade=20, csv_name=''):
     '''
@@ -45,9 +46,6 @@ def criar_portadores(quantidade=20, csv_name=''):
     
     if quantidade > 200: 
         quantidade = 200
-    
-    if csv_name == '':
-        csv_name = 'pessoas.csv'
     
     cpfs = []
     payload_portador = {
@@ -84,6 +82,7 @@ def criar_portadores(quantidade=20, csv_name=''):
             payload_portador['cpf'] = row[2]
             r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload_portador), headers={'content-type': 'application/json'})
     
+    print('portadores criados:',len(cpfs), 'portadores')
     return cpfs
 
 def criar_cartoes(cpfs):
@@ -129,6 +128,7 @@ def criar_cartoes(cpfs):
         payload_cartao['numCartao'] = str(cards[i])
         r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarCartao', data=json.dumps(payload_cartao), headers={'content-type': 'application/json'})
 
+    print('cartoes criados:',len(cards), 'cartoes')
     return cards
 
 # async def realizar_compras(cards):
