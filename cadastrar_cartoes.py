@@ -1,6 +1,16 @@
 # -*- coding: utf-8 -*-
 '''
     Testando o teste.
+
+    Teste:
+    - 3 máquinas:
+    	* 1 peer, 1 ordenador, 1 couchdb em cada
+    - Emissor criado: Renner
+    - Portadores criados: 200 portadores
+    - Cartoes criados: 200 cartoes
+    - 16m16.237s
+    - Criação do bloco: 10 transações ou 2 segundos
+
 '''
 import time
 import timeit
