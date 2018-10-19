@@ -15,7 +15,7 @@ $ pip3 install -r requirements.txt
 
 Existe dois scripts na pasta: 
 - [cadastrar_cartoes.py](cadastrar_cartoes.py): realiza o cadastro de um emissor, cadastro de determinada quantidade de portadores e cartões. 
-- [compras_tests.py](compras_test.py): realiza determinada quantidade de compras a partir dos cartões previamente cadastrados.
+- [compras_tests.py](compras_tests.py): realiza determinada quantidade de compras a partir dos cartões previamente cadastrados.
 
 Para executar os testes de fato:
 
