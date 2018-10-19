@@ -1,14 +1,47 @@
-# conductor-blockchain-test
+## Repositório destinado aos scripts de testes - Conductor Lab
 
-## Dependências
+### Dependências necessárias para executar os scripts:
 
-* requests - pip3 install requests
-* futures - pip3 install futures
-* asyncio - pip3 install asyncio
+```sh
+$ sudo apt-get install python3-pip
+```
 
-## Executando o código:
+Dentro da pasta raiz do repositório clonado...
 
-* python3.5 cadastrar_cartoes.py
-* python3.5 compras_tests.py
+```sh
+$ pip3 install -r requirements.txt
+```
 
-# Esse tutorial ainda vai ser atualizado corretamente.
+### Para executar os scripts:
+
+Existe dois scripts na pasta: *cadastrar_cartoes.py* e *compras_tests.py*. O *cadastrar_cartoes.py* realiza o cadastro de um emissor, determinada quantidade de portadores e cartões. O *compras_tests.py* realiza determinada quantidade de compras a partir dos cartões previamente cadastrados.\
+Para executar os testes de fato:
+
+```sh
+$ python3 cadastrar_cartoes.py -csv caminho/para/csv -n n_de_cartoes
+$ python3 compras_tests.py -n n_de_compras
+```
+
+Mais informações das funções acima:
+
+```sh
+$ python3 cadastrar_cartoes.py -h
+```
+
+ou
+
+
+```sh
+$ python3 compras_tests.py -h
+```
+
+#### Alguns relatórios:
+##### Teste Alterório
+- 3 máquinas:
+    - 1 peer, 1 ordenador, 1 couchdb em cada
+    - Emissor criado: Renner
+    - Portadores criados: 200 portadores
+    - Cartoes criados: 200 cartoes
+    - 16.237s
+    - Criação do bloco: 10 transações ou 2 segundos
+

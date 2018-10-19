@@ -1,0 +1,4 @@
+pandas
+futures
+requests
+Unidecode
