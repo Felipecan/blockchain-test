@@ -11,9 +11,12 @@ Dentro da pasta raiz do repositório clonado...
 $ pip3 install -r requirements.txt
 ```
 
-### Para executar os scripts:
+### Execução dos sripts
 
-Existe dois scripts na pasta: *cadastrar_cartoes.py* e [compras_tests.py](compras_test.py). O *cadastrar_cartoes.py* realiza o cadastro de um emissor, cadastro de determinada quantidade de portadores e cartões. O *compras_tests.py* realiza determinada quantidade de compras a partir dos cartões previamente cadastrados.\
+Existe dois scripts na pasta: 
+- [cadastrar_cartoes.py](cadastrar_cartoes.py): realiza o cadastro de um emissor, cadastro de determinada quantidade de portadores e cartões. 
+- [compras_tests.py](compras_test.py): realiza determinada quantidade de compras a partir dos cartões previamente cadastrados.
+
 Para executar os testes de fato:
 
 [arquivo .csv contendo as pessoas para cadastrar](https://drive.google.com/file/d/1yrQv9hopJK63oVTV2QMF1OHISb81AtXB/view?usp=sharing)
