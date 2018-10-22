@@ -45,9 +45,6 @@ def criar_portadores(quantidade=20, csv_name=''):
             A funcao retorna uma lista com os CPFs inseridos na Blockchain.
     '''    
     
-    if quantidade > 200: 
-        quantidade = 200
-    
     cpfs = []
     payloads = []
     payload_portador = {
