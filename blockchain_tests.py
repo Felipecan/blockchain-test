@@ -23,7 +23,9 @@ def cadastrar_emissor(emissor):
 
 def criar_portador(payload):
     r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload), headers={'content-type': 'application/json'})
-    print(r.status_code)
+    # print(r.status_code)
+    return r.status_code
+    # print(r.status_code)
 
 def criar_portadores(quantidade=20, csv_name=''):
     '''
@@ -79,22 +81,31 @@ def criar_portadores(quantidade=20, csv_name=''):
             payload_portador['sobrenome'] = unidecode(nome[1])
         
         cpfs.append(cpf)
-        # payloads.append(payload_portador)
+        payloads.append(payload_portador)
         quantidade -= 1
-        r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload_portador), headers={'content-type': 'application/json'})    
+        # a linha abaixo deve ser comentada ao ser possível usar threads ou algo semelhante
+        # r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload_portador), headers={'content-type': 'application/json'})    
             
     
-    # pool = ThreadPoolExecutor(floor(len(payloads)/2))
-    # futures = []
-    # for payload in payloads:
-    #     futures.append(pool.submit(criar_portador, payload))
+    pool = ThreadPoolExecutor(floor(len(payloads)/2))
+    futures = []
+    for payload in payloads:
+        futures.append(pool.submit(criar_portador, payload))
 
-    # w = wait(futures, timeout=None)    
-    # for response in futures:
-    #     print(response.result(timeout=0))
- 
+    i = 0
+    w = wait(futures, timeout=None)    
+    for response in futures:
+        if(response.result(timeout=None) != 200):
+            print('remove from cpfs')
+        i += 1
+        
+    
+    print('response 0')
+    temp = futures[0].result(timeout=None)
+    print(temp)
+
+    ####### diretamente com Threads #######
     # list_t = []
-
     # for payload in payloads:
     #     list_t.append(Thread(target=criar_portador, args=[payload]))
 
@@ -106,6 +117,10 @@ def criar_portadores(quantidade=20, csv_name=''):
 
     print('portadores criados:',len(cpfs), 'portadores')
     return cpfs
+
+def criar_cartao(payload):
+    return requests.post(localhost_url + '/org.conductor.blockchain.CadastrarCartao', data=json.dumps(payload), headers={'content-type': 'application/json'})
+    # print(r.status_code)
 
 def criar_cartoes(cpfs):
     '''
@@ -123,13 +138,13 @@ def criar_cartoes(cpfs):
             A função retorna uma lista contendo os números dos cartões que foram cadastrados na Blockchain. 
             ATENÇÃO: Essa lista contêm valores inteiros.
     '''  
-    #verificar ainda se é uma lista
+    # verificar ainda se é uma lista
     if not cpfs: 
         print('vazio')
         return
 
     cards = random.sample(range(1000, 9999), len(cpfs))
-    
+    payloads = []
     payload_cartao = {
         '$class': 'org.conductor.blockchain.CadastrarCartao',
         'emissor': 'resource:org.conductor.blockchain.Emissor#Renner',
@@ -148,7 +163,29 @@ def criar_cartoes(cpfs):
     for i in range(len(cpfs)):       
         payload_cartao['portador'] = 'resource:org.conductor.blockchain.Portador#'+cpfs[i]
         payload_cartao['numCartao'] = str(cards[i])
+        # payloads.append(payload_cartao)
+        # a linha abaixo deve ser comentada ao ser possível usar threads ou algo semelhante
         r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarCartao', data=json.dumps(payload_cartao), headers={'content-type': 'application/json'})
+
+    # pool = ThreadPoolExecutor(floor(len(payloads)/2))
+    # futures = []
+    # for payload in payloads:
+    #     futures.append(pool.submit(criar_cartao, payload))
+
+    # w = wait(futures, timeout=None)    
+    # for response in futures:
+    #     print(response.result(timeout=0))
+
+    ####### diretamente com Threads #######
+    # list_t = []
+    # for payload in payloads:
+    #     list_t.append(Thread(target=criar_cartao, args=[payload]))
+
+    # for i in range(len(payloads)):
+    #     list_t[i].start()
+
+    # for i in range(len(payloads)):
+    #     list_t[i].join()
 
     print('cartoes criados:',len(cards), 'cartoes')
     return cards
@@ -190,7 +227,7 @@ def realizar_compras(cards, t_i):
     #     list_t[i].join()
 
 
-# auxiliares
+################## auxiliares ##################
 def get_all_cards():
     '''
         Descrição:

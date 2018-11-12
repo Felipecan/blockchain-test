@@ -16,7 +16,7 @@ import time
 import timeit
 import asyncio
 import argparse
-import blockchain_tests
+import blockchain_tests as bt
 
 parser = argparse.ArgumentParser(description='Script para popular a Blockchain')
 
@@ -27,6 +27,6 @@ arguments = parser.parse_args()
 print ('Assumindo arquivo .csv como:',arguments.csv_name)
 print ('Assumindo quantidade igual a:',arguments.n)
 
-blockchain_tests.cadastrar_emissor('Renner')
-cpfs = blockchain_tests.criar_portadores(arguments.n, arguments.csv_name)
-cards = blockchain_tests.criar_cartoes(cpfs)
+bt.cadastrar_emissor('Renner')
+cpfs = bt.criar_portadores(arguments.n, arguments.csv_name)
+cards = bt.criar_cartoes(cpfs)
