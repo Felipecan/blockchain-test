@@ -23,10 +23,11 @@ def cadastrar_emissor(emissor):
 
 def criar_portador(payload):
     r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload), headers={'content-type': 'application/json'})
-    # print(r.status_code)
-    return r.status_code
-    # print(r.status_code)
-
+    ret = []
+    ret.append(r)
+    ret.append(payload)    
+    return ret
+    
 def criar_portadores(quantidade=20, csv_name=''):
     '''
         Descrição:
@@ -91,18 +92,14 @@ def criar_portadores(quantidade=20, csv_name=''):
     futures = []
     for payload in payloads:
         futures.append(pool.submit(criar_portador, payload))
-
-    i = 0
-    w = wait(futures, timeout=None)    
-    for response in futures:
-        if(response.result(timeout=None) != 200):
-            print('remove from cpfs')
-        i += 1
-        
     
-    print('response 0')
-    temp = futures[0].result(timeout=None)
-    print(temp)
+    w = wait(futures, timeout=None)    
+    for response in futures:        
+        ret = response.result(timeout=None)
+        if(ret[0].status_code != 200):
+            print('remove from cpfs')
+            print(ret[1]['cpf'])
+            cpfs.remove(ret[1]['cpf'])            
 
     ####### diretamente com Threads #######
     # list_t = []
