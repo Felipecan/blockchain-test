@@ -4,16 +4,16 @@ import requests
 import asyncio
 import concurrent.futures
 from datetime import datetime
-
+from concurrent.futures import ThreadPoolExecutor
 from threading import Thread
 import csv
 import random
-
+from random import randint
 import time
 import timeit
 
 
-localhost_url = 'http://localhost:3000/api'
+localhost_url = 'http://150.165.167.110/api'
 
 def cadastrar_emissor(emissor):
     payload_emissor = {
@@ -21,8 +21,10 @@ def cadastrar_emissor(emissor):
         'emissorId': emissor,
         'cnpj': '99999999999999'
     }
-    r = requests.post(localhost_url + "/org.conductor.blockchain.Emissor", data=json.dumps(payload_emissor), headers={'content-type': 'application/json'})
+    r = requests.post(localhost_url + "/Emissor", data=json.dumps(payload_emissor), headers={"X-Access-Token":"jf8NmdLwG6DYDegnkZU81f2IMal9AUZ3O1wLvvUzvXbcx8RmfsujqP8bbsusCaAG","content-type": "application/json"})
     print ('Emissor criado:', emissor)
+    print(r.status_code)
+    #print(r.text)
 
 def criar_portadores(quantidade=20, csv_name=''):
     '''
@@ -80,8 +82,9 @@ def criar_portadores(quantidade=20, csv_name=''):
             payload_portador['nome'] = row[0]
             payload_portador['sobrenome'] = row[1]
             payload_portador['cpf'] = row[2]
-            r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload_portador), headers={'content-type': 'application/json'})
-    
+            r = requests.post(localhost_url + '/CadastrarPortador', data=json.dumps(payload_portador), headers={"X-Access-Token":"jf8NmdLwG6DYDegnkZU81f2IMal9AUZ3O1wLvvUzvXbcx8RmfsujqP8bbsusCaAG","content-type": "application/json"})
+            print(r.status_code)
+            #print(r.message)
     print('portadores criados:',len(cpfs), 'portadores')
     return cpfs
 
@@ -126,8 +129,8 @@ def criar_cartoes(cpfs):
     for i in range(len(cpfs)):       
         payload_cartao['portador'] = 'resource:org.conductor.blockchain.Portador#'+cpfs[i]
         payload_cartao['numCartao'] = str(cards[i])
-        r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarCartao', data=json.dumps(payload_cartao), headers={'content-type': 'application/json'})
-
+        r = requests.post(localhost_url + '/CadastrarCartao', data=json.dumps(payload_cartao), headers={"X-Access-Token":"jf8NmdLwG6DYDegnkZU81f2IMal9AUZ3O1wLvvUzvXbcx8RmfsujqP8bbsusCaAG","content-type": "application/json"})
+        #print(r.status_code)
     print('cartoes criados:',len(cards), 'cartoes')
     return cards
 
@@ -188,45 +191,73 @@ def criar_cartoes(cpfs):
 #         for response in await asyncio.gather(*futures):            
 #             pass   
 
-def realizar_compra(id, card, t_i):
+def realizar_compra(id, card):
     dt = str(datetime.utcnow().isoformat()) 
     valor = random.randint(20, 200)                        
     # parcelas = str(random.randint(1, 3))
-    payload = {
-        '$class': 'org.conductor.blockchain.RealizarCompra',
-        'cartao': 'resource:org.conductor.blockchain.CartaoCredito#' + str(card),
-        'destino': 'boteco',
-        'senha': '1234',
-        'cvv': '123',
-        'meio': 'ECOMMERCE',
-        'mesValidade': 12,
-        'anoValidade': 2050,
-        'parcelas': '1', # parcelas
-        'valor': valor,
-        'moeda': 'BRL',
-        'data': dt
-    }
-    r = requests.post(localhost_url + '/org.conductor.blockchain.RealizarCompra', data=json.dumps(payload), headers={'content-type': 'application/json'})
-    
-    print('REQUEST FINISHED IN THREAD: ', id)
-    # print('time: ', timeit.default_timer() - t_i)
-    # print('response: ', r.status_code)
+    print('THREAD: ' + str(id) + ' CARDS: ' + str(len(card)))
+    payload = []
+    for i in range(len(card)):
+        payload.append({
+            '$class': 'org.conductor.blockchain.RealizarCompra',
+            'cartao': 'resource:org.conductor.blockchain.CartaoCredito#' + str(card[i]),
+            'destino': 'boteco',
+            'senha': '1234',
+            'cvv': '123',
+            'meio': 'ECOMMERCE',
+            'mesValidade': 12,
+            'anoValidade': 2050,
+            'parcelas': '1', # parcelas
+            'valor': valor,
+            'moeda': 'BRL',
+            'data': dt
+        })
+    #print('Payload len of thread %s: %s' % (id, len(payload)))
+    r = requests.post(localhost_url + '/RealizarCompra', data=json.dumps(payload), headers={"X-Access-Token":"jf8NmdLwG6DYDegnkZU81f2IMal9AUZ3O1wLvvUzvXbcx8RmfsujqP8bbsusCaAG","content-type": "application/json"})
+    print(r.status_code)
+    #print(r.text)
+    #print('REQUEST FINISHED IN THREAD: ', id)
 
-def realizar_compras(cards, t_i):
-    list_t = []
+def realizar_compras_1(cards):
+    print('OP = 1')
+    with concurrent.futures.ThreadPoolExecutor(max_workers=200) as executor:
+        jobs=[]
+        #print(len(cards))
+        for i in range(len(cards)):
+            job=executor.submit(realizar_compra, i, cards[i])
+            jobs.append(job)
+	
+    concurrent.futures.wait(jobs, timeout=None)
+    print("1 - FINISHED")
 
-    for i in range(len(cards)):
-        list_t.append([Thread(target=realizar_compra, args=[(i), cards[i], t_i]), i])
-    
-    for i in range(len(list_t)):
-        print(list_t[i])
 
-    for i in range(len(cards)):
-        list_t[i][0].start()
+def realizar_compras_2(cards):
+    print('OP = 2')
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        jobs=[]
+        print(len(cards))
+        c = cards
+        for i in range(int(len(cards)/10)):
+            j = randint(1,20)
+            job=executor.submit(realizar_compra, i, c[0:j])
+            c = c[j:]
+            jobs.append(job)
+	
+    concurrent.futures.wait(jobs, timeout=None)
+    print("2 - FINISHED")
 
-    for i in range(len(cards)):
-         list_t[i][0].join()
-         print('THREAD JOINED: ', i)
+
+def realizar_compras_3(cards):
+    print('OP = 3')
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        jobs=[]
+        print(len(cards))
+        for i in range(int(len(cards)/10)):
+            job=executor.submit(realizar_compra, i, cards[i:i+20])
+            jobs.append(job)
+	
+    concurrent.futures.wait(jobs, timeout=None)
+    print("3 - FINISHED")
 
 
 
@@ -243,13 +274,14 @@ def get_all_cards():
             Retorna uma lista de strings com todos os cartões cadastrados.
     '''  
     cards = []
-    r = requests.get(localhost_url + '/org.conductor.blockchain.CadastrarCartao')
+    r = requests.get(localhost_url + '/CadastrarCartao', headers={"X-Access-Token":"jf8NmdLwG6DYDegnkZU81f2IMal9AUZ3O1wLvvUzvXbcx8RmfsujqP8bbsusCaAG"})
     j = r.json()
+    #print(j[0]['numCartao'])
     for i in range(len(j)):
         cards.append(j[i]['numCartao'])
     return cards
 
 def get_all_compras():
-    r = requests.get(localhost_url + '/org.conductor.blockchain.RealizarCompra')
+    r = requests.get(localhost_url + '/RealizarCompra', headers={"X-Access-Token":"jf8NmdLwG6DYDegnkZU81f2IMal9AUZ3O1wLvvUzvXbcx8RmfsujqP8bbsusCaAG"})
     jsons = r.json()
     return jsons

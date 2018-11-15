@@ -7,6 +7,7 @@ import timeit
 import asyncio
 import argparse
 import blockchain_tests
+from threading import Thread
 
 parser = argparse.ArgumentParser(description='Script para popular a Blockchain')
 
