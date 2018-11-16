@@ -21,9 +21,7 @@ def cadastrar_emissor(emissor):
     }
     r = requests.post(api_url + "/org.conductor.blockchain.Emissor", data=json.dumps(payload_emissor), headers={'content-type': 'application/json'})
     print ('Emissor criado:', emissor)
-    print(r.status_code)
-    #print(r.text)
-
+    
 def criar_portador(payload):
     r = requests.post(api_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload), headers={'content-type': 'application/json'})
     # ret = []
@@ -156,9 +154,9 @@ def criar_cartoes(cpfs):
     
     c = get_all_cards()
     if len(c) <= 0:
-        cards = random.sample(range(1000, 9999), len(cpfs))
+        cards = list(range(0, len(cpfs))) #random.sample(range(1000, 9999), len(cpfs))
     else:
-        cards = random.sample(range(1000, 9999), len(cpfs))
+        cards = list(range(len(c), len(c)+len(cpfs)))
     
     payloads = []
     payload_cartao = {
@@ -262,8 +260,10 @@ def realizar_compra(id, card):
             'moeda': 'BRL',
             'data': dt
         })
+        
     #print('Payload len of thread %s: %s' % (id, len(payload)))
-    r = requests.post(api_url + '/RealizarCompra', data=json.dumps(payload), headers={"X-Access-Token":"jf8NmdLwG6DYDegnkZU81f2IMal9AUZ3O1wLvvUzvXbcx8RmfsujqP8bbsusCaAG","content-type": "application/json"})
+    # r = requests.post(api_url + '/RealizarCompra', data=json.dumps(payload), headers={"X-Access-Token":"jf8NmdLwG6DYDegnkZU81f2IMal9AUZ3O1wLvvUzvXbcx8RmfsujqP8bbsusCaAG","content-type": "application/json"})
+    r = requests.post(api_url + '/org.conductor.blockchain.RealizarCompra', data=json.dumps(payload), headers={"X-Access-Token":"jf8NmdLwG6DYDegnkZU81f2IMal9AUZ3O1wLvvUzvXbcx8RmfsujqP8bbsusCaAG","content-type": "application/json"})
     print(r.status_code)
     #print(r.text)
     #print('REQUEST FINISHED IN THREAD: ', id)
