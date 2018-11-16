@@ -22,8 +22,8 @@ Para executar os testes de fato:
 [arquivo .csv contendo as pessoas para cadastrar](https://drive.google.com/file/d/1yrQv9hopJK63oVTV2QMF1OHISb81AtXB/view?usp=sharing)
 
 ```sh
-$ python3 cadastrar_cartoes.py -csv caminho/para/csv -n n_de_cartoes
-$ python3 compras_tests.py -n n_de_compras
+$ python3 cadastrar_cartoes.py -csv caminho/para/csv -ini inicio_csv -qtd n_de_cartoes
+$ python3 compras_tests.py -qtd n_de_compras
 ```
 
 Mais informações das funções acima:

@@ -11,11 +11,11 @@ import blockchain_tests
 from random import randint
 
 parser = argparse.ArgumentParser(description='Script para popular a Blockchain')
-parser.add_argument('-n', action='store', type=int, dest='n', default='200', required=False, help='Quantidade de compras.')
+parser.add_argument('-qtd', action='store', type=int, dest='qtd', default='200', required=False, help='Quantidade de compras.')
 arguments = parser.parse_args()
 
 all_cards = blockchain_tests.get_all_cards()
-cards = all_cards[:arguments.n]
+cards = all_cards[:arguments.qtd]
 # blockchain_tests.cadastrar_emissor('Renner')
 # cpfs = blockchain_tests.criar_portadores(50)
 # cards = blockchain_tests.criar_cartoes(cpfs)

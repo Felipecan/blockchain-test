@@ -10,8 +10,8 @@ from datetime import datetime
 from unidecode import unidecode 
 from concurrent.futures import ThreadPoolExecutor, wait 
 
-# localhost_url = 'http://localhost:3000/api'
-localhost_url = 'http://150.165.167.110:3000/api'
+api_url = 'http://localhost:3000/api'
+# api_url = 'http://150.165.167.110:3000/api'
 
 def cadastrar_emissor(emissor):
     payload_emissor = {
@@ -19,36 +19,49 @@ def cadastrar_emissor(emissor):
         'emissorId': emissor,
         'cnpj': '99999999999999'
     }
-    r = requests.post(localhost_url + "/org.conductor.blockchain.Emissor", data=json.dumps(payload_emissor), headers={'content-type': 'application/json'})
+    r = requests.post(api_url + "/org.conductor.blockchain.Emissor", data=json.dumps(payload_emissor), headers={'content-type': 'application/json'})
     print ('Emissor criado:', emissor)
 
 def criar_portador(payload):
-    r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload), headers={'content-type': 'application/json'})
+    r = requests.post(api_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload), headers={'content-type': 'application/json'})
     # ret = []
     # ret.append(r)
     # ret.append(payload)    
     # return ret
     
-def criar_portadores(quantidade=20, csv_name=''):
+def criar_portadores(csv_name='', inicio=0, quantidade=20):
     '''
         Descrição:
             A função lê um arquvo csv e cria certa quantidade de portadores na Blockchain. 
             Por enquanto a função está limitada a criação de no máximo 200 portadores.
 
         Utilização:
-            criar_portdores(20, 'caminho/para/arquivo/nome.csv')
+            criar_portdores('caminho/para/arquivo/nome.csv', 0, 20)
 
         Parâmetros:
-            quantidade:
-                O parâmetro especifica a quantidade de portadores a ser criado.
             csv_name:
                 O parâmetro especifica o caminho/nome para o arquivo csv contendo as informações que serão inseridas na Blockchain. 
                 ATENÇÃO: O arquivo deve conter, na sequência: nome, sobrenome e cpf.
-        
+            inicio:
+                Parametro especifica o ponto inicial, no csv, de onde vai ser criado os portadores.
+            quantidade:
+                O parâmetro especifica a quantidade de portadores a ser criado.            
+
         Retorno:
             A funcao retorna uma lista com os CPFs inseridos na Blockchain.
     '''    
-    
+       
+    csv_file = pd.read_csv(csv_name, sep='|', encoding='ISO-8859-1', low_memory=False)
+    csv_file = csv_file.dropna(subset=['cpf', 'nome'])
+    csv_file = csv_file.drop_duplicates(subset=['cpf'])
+    # len == 351749
+    if (inicio+quantidade) > csv_file.__len__():
+        print('Quantidade maior que a capacidade do csv')
+        return -1
+
+    if inicio < 0:
+        inicio = 0
+
     cpfs = []
     payloads = []
     payload_portador = {
@@ -58,23 +71,15 @@ def criar_portadores(quantidade=20, csv_name=''):
         'sobrenome': ' ',
         'endereco': 'CI'
     }
-    
-    csv_file = pd.read_csv(csv_name, sep='|', encoding='ISO-8859-1', low_memory=False)
-    csv_file = csv_file.dropna(subset=['cpf', 'nome'])
-    csv_file = csv_file.drop_duplicates(subset=['cpf'])
-
-    # len == 351749
-    if quantidade > csv_file.__len__():
-        print('Quantidade maior que a capacidade do csv')
-        return -1
 
     temp = 0
     for row in csv_file.itertuples():
-        if temp == quantidade:
+        if quantidade == 0:
             break
 
-        if temp < 40:
-            pass
+        if temp < inicio:
+            temp += 1
+            continue
 
         cpf = row.cpf.replace('*', '0')
         nome = row.nome.split(' ')
@@ -88,9 +93,9 @@ def criar_portadores(quantidade=20, csv_name=''):
         
         cpfs.append(cpf)
         payloads.append(payload_portador)
-        temp += 1
+        quantidade -= 1
         # a linha abaixo deve ser comentada ao ser possível usar threads ou algo semelhante
-        r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload_portador), headers={'content-type': 'application/json'})    
+        r = requests.post(api_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload_portador), headers={'content-type': 'application/json'})    
             
     
     # pool = ThreadPoolExecutor(floor(len(payloads)/2))
@@ -121,7 +126,7 @@ def criar_portadores(quantidade=20, csv_name=''):
     return cpfs
 
 def criar_cartao(payload):    
-    r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarCartao', data=json.dumps(payload), headers={'content-type': 'application/json'})
+    r = requests.post(api_url + '/org.conductor.blockchain.CadastrarCartao', data=json.dumps(payload), headers={'content-type': 'application/json'})
     # return
     # print(r.status_code)
 
@@ -145,8 +150,13 @@ def criar_cartoes(cpfs):
     if not cpfs: 
         print('vazio')
         return
-
-    cards = random.sample(range(1000, 9999), len(cpfs))
+    
+    c = get_all_cards()
+    if len(c) <= 0:
+        cards = random.sample(range(1000, 9999), len(cpfs))
+    else:
+        cards = random.sample(range(1000, 9999), len(cpfs))
+    
     payloads = []
     payload_cartao = {
         '$class': 'org.conductor.blockchain.CadastrarCartao',
@@ -168,7 +178,7 @@ def criar_cartoes(cpfs):
         payload_cartao['numCartao'] = str(cards[i])
         # payloads.append(payload_cartao)
         # a linha abaixo deve ser comentada ao ser possível usar threads ou algo semelhante
-        r = requests.post(localhost_url + '/org.conductor.blockchain.CadastrarCartao', data=json.dumps(payload_cartao), headers={'content-type': 'application/json'})
+        r = requests.post(api_url + '/org.conductor.blockchain.CadastrarCartao', data=json.dumps(payload_cartao), headers={'content-type': 'application/json'})
 
     # pool = ThreadPoolExecutor(floor(len(payloads)/2))
     # futures = []
@@ -211,7 +221,7 @@ def criar_cartoes(cpfs):
 #         'moeda': 'BRL',
 #         'data': dt
 #     }
-#     r = requests.post(localhost_url + '/org.conductor.blockchain.RealizarCompra', data=json.dumps(payload), headers={'content-type': 'application/json'})
+#     r = requests.post(api_url + '/org.conductor.blockchain.RealizarCompra', data=json.dumps(payload), headers={'content-type': 'application/json'})
     
 #     # print('ID: ', id)
 #     # print('time: ', timeit.default_timer() - t_i)
@@ -251,7 +261,7 @@ def realizar_compra(id, card):
             'data': dt
         })
     #print('Payload len of thread %s: %s' % (id, len(payload)))
-    r = requests.post(localhost_url + '/RealizarCompra', data=json.dumps(payload), headers={"X-Access-Token":"jf8NmdLwG6DYDegnkZU81f2IMal9AUZ3O1wLvvUzvXbcx8RmfsujqP8bbsusCaAG","content-type": "application/json"})
+    r = requests.post(api_url + '/RealizarCompra', data=json.dumps(payload), headers={"X-Access-Token":"jf8NmdLwG6DYDegnkZU81f2IMal9AUZ3O1wLvvUzvXbcx8RmfsujqP8bbsusCaAG","content-type": "application/json"})
     print(r.status_code)
     #print(r.text)
     #print('REQUEST FINISHED IN THREAD: ', id)
@@ -310,18 +320,18 @@ def get_all_cards():
             Retorna uma lista de strings com todos os cartões cadastrados.
     '''  
     cards = []
-    r = requests.get(localhost_url + '/org.conductor.blockchain.CadastrarCartao')
+    r = requests.get(api_url + '/org.conductor.blockchain.CadastrarCartao')
     j = r.json()
     for i in range(len(j)):
         cards.append(j[i]['numCartao'])
     return cards
 
 def get_all_compras():
-    r = requests.get(localhost_url + '/org.conductor.blockchain.RealizarCompra')
+    r = requests.get(api_url + '/org.conductor.blockchain.RealizarCompra')
     jsons = r.json()
     return jsons
 
 def get_all_portadores():
-    r = requests.get(localhost_url + '/org.conductor.blockchain.CadastrarPortador')
+    r = requests.get(api_url + '/org.conductor.blockchain.CadastrarPortador')
     jsons = r.json()
     return jsons
