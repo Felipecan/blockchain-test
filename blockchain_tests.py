@@ -21,6 +21,8 @@ def cadastrar_emissor(emissor):
     }
     r = requests.post(api_url + "/org.conductor.blockchain.Emissor", data=json.dumps(payload_emissor), headers={'content-type': 'application/json'})
     print ('Emissor criado:', emissor)
+    print(r.status_code)
+    #print(r.text)
 
 def criar_portador(payload):
     r = requests.post(api_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload), headers={'content-type': 'application/json'})
@@ -239,7 +241,6 @@ def criar_cartoes(cpfs):
 #         ret = response.result(timeout=None)
 #         print(ret)
 
-
 def realizar_compra(id, card):
     dt = str(datetime.utcnow().isoformat()) 
     valor = random.randint(20, 200)                        
@@ -323,6 +324,7 @@ def get_all_cards():
     cards = []
     r = requests.get(api_url + '/org.conductor.blockchain.CadastrarCartao')
     j = r.json()
+    #print(j[0]['numCartao'])
     for i in range(len(j)):
         cards.append(j[i]['numCartao'])
     return cards
