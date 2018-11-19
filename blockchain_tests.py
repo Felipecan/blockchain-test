@@ -11,9 +11,9 @@ from unidecode import unidecode
 from concurrent.futures import ThreadPoolExecutor, wait 
 
 api_url = 'http://localhost:3000/api'
-# api_url = 'http://150.165.167.110:3000/api'
+# api_url = 'http://150.165.167.110/api'
 
-def cadastrar_emissor(emissor):
+def cadastrar_emissor(emissor):    
     payload_emissor = {
         '$class': 'org.conductor.blockchain.Emissor',
         'emissorId': emissor,
@@ -91,12 +91,13 @@ def criar_portadores(csv_name='', inicio=0, quantidade=20):
         else:
             payload_portador['sobrenome'] = unidecode(nome[1])
         
-        cpfs.append(cpf)
+        # cpfs.append(cpf)
         payloads.append(payload_portador)
         quantidade -= 1
         # a linha abaixo deve ser comentada ao ser possível usar threads ou algo semelhante
         r = requests.post(api_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload_portador), headers={'content-type': 'application/json'})    
-            
+        if(r.status_code < 300 and r.status_code > 100):    
+            cpfs.append(cpf)
     
     # pool = ThreadPoolExecutor(floor(len(payloads)/2))
     # futures = []
@@ -154,9 +155,13 @@ def criar_cartoes(cpfs):
     
     c = get_all_cards()
     if len(c) <= 0:
-        cards = list(range(0, len(cpfs))) #random.sample(range(1000, 9999), len(cpfs))
+        cards = random.sample(range(1000, 3000), len(cpfs))
     else:
-        cards = list(range(len(c), len(c)+len(cpfs)))
+        random.seed()
+        beg = random.randint(1, 50)
+        end = random.randint(50, 75)
+        random.seed()
+        cards = random.sample(range(beg*3000, end*5000), len(cpfs))
     
     payloads = []
     payload_cartao = {
@@ -165,7 +170,7 @@ def criar_cartoes(cpfs):
         'portador': ' ',
         'numCartao': ' ',
         'estado': 'ATIVO',
-        'limiteCreditoMaximo': 99999,
+        'limiteCreditoMaximo': 9999999,
         'senha': '1234',
         'cvv': '123',
         'bandeira': 'Visa',
@@ -174,13 +179,18 @@ def criar_cartoes(cpfs):
         'anoValidade': 2050
     }
 
+    r = []
     for i in range(len(cpfs)):       
         payload_cartao['portador'] = 'resource:org.conductor.blockchain.Portador#'+cpfs[i]
         payload_cartao['numCartao'] = str(cards[i])
         # payloads.append(payload_cartao)
         # a linha abaixo deve ser comentada ao ser possível usar threads ou algo semelhante
-        r = requests.post(api_url + '/org.conductor.blockchain.CadastrarCartao', data=json.dumps(payload_cartao), headers={'content-type': 'application/json'})
+        r.append(requests.post(api_url + '/org.conductor.blockchain.CadastrarCartao', data=json.dumps(payload_cartao), headers={'content-type': 'application/json'}))
 
+    for i in range(len(r)):
+        if(r[i].status_code >= 300 and r[i].status_code <= 100):    
+            cards.remove(cards[i])
+    
     # pool = ThreadPoolExecutor(floor(len(payloads)/2))
     # futures = []
     # for payload in payloads:
@@ -322,19 +332,19 @@ def get_all_cards():
             Retorna uma lista de strings com todos os cartões cadastrados.
     '''  
     cards = []
-    r = requests.get(api_url + '/org.conductor.blockchain.CadastrarCartao')
-    j = r.json()
-    #print(j[0]['numCartao'])
-    for i in range(len(j)):
-        cards.append(j[i]['numCartao'])
-    return cards
+    r = requests.get(api_url + '/org.conductor.blockchain.CartaoCredito')
+    jsons = r.json()        
+    for json in jsons:        
+        cards.append(json['numeroCartao'])
+        # cards.append(json['limiteDisponivel'])
+    return cards    
 
 def get_all_compras():
-    r = requests.get(api_url + '/org.conductor.blockchain.RealizarCompra')
+    r = requests.get(api_url + '/org.conductor.blockchain.Compra')
     jsons = r.json()
     return jsons
 
 def get_all_portadores():
-    r = requests.get(api_url + '/org.conductor.blockchain.CadastrarPortador')
+    r = requests.get(api_url + '/org.conductor.blockchain.Portador')
     jsons = r.json()
-    return jsons
+    return jsons  
