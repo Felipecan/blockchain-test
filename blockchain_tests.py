@@ -253,7 +253,7 @@ def realizar_compra(id, card):
     dt = str(datetime.utcnow().isoformat()) 
     valor = random.randint(20, 200)                        
     # parcelas = str(random.randint(1, 3))
-    print('THREAD: ' + str(id) + ' CARDS: ' + str(len(card)))
+    print('THREAD: ' + str(id) + ' CARDS: ' + str(len(card)) + ' CARDS: ' + str(card))
     payload = []
     for i in range(len(card)):
         payload.append({
@@ -280,12 +280,12 @@ def realizar_compra(id, card):
 
 def realizar_compras_1(cards):
     print('OP = 1')
-    with ThreadPoolExecutor(max_workers=200) as executor:
+    with ThreadPoolExecutor(max_workers=len(cards)) as executor:
         jobs=[]
-        #print(len(cards))
-        for i in range(len(cards)):
-            job=executor.submit(realizar_compra, i, cards[i])
-            jobs.append(job)
+        #print(len(cards))        
+        for i in range(len(cards)):            
+            job=executor.submit(realizar_compra, i, cards[i:i+1])
+            jobs.append(job)            
 	
     wait(jobs, timeout=None)
     print("1 - FINISHED")
