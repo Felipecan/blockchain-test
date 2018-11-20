@@ -312,10 +312,10 @@ def realizar_compras_2(cards):
     print('OP = 2')
     with ThreadPoolExecutor(max_workers=10) as executor:
         jobs=[]
-        print(len(cards))
+        q_cards = len(cards)/10
         c = cards
-        for i in range(int(len(cards)/10)):
-            j = random.randint(1,20)
+        for i in range(10):
+            j = random.randint(1,q_cards)
             job=executor.submit(realizar_compra, i, c[0:j])
             c = c[j:]
             jobs.append(job)
@@ -328,17 +328,32 @@ def realizar_compras_3(cards):
     print('OP = 3')
     with ThreadPoolExecutor(max_workers=10) as executor:
         jobs=[]
-        print(len(cards))
-        index = 0
-        for i in range(int(len(cards)/10)):
-            if index >= len(cards):
-                break
-            job=executor.submit(realizar_compra, i, cards[index:index+20])
+        q_cards = len(cards)/10
+        index = 0        
+        for i in range(10):            
+            job=executor.submit(realizar_compra, i, cards[index:index+q_cards])
             jobs.append(job)
             index += 20            
 	
     wait(jobs, timeout=None)
     print("3 - FINISHED")
+
+def realizar_compras_4(cards):
+    print('OP = 4')
+    w = int(len(cards)/20)
+    wwith ThreadPoolExecutor(max_workers=w) as executor:
+        jobs=[]
+        q_cards = w
+        c = cards
+        for i in range(w):
+            j = random.randint(1,q_cards)
+            job=executor.submit(realizar_compra, i, c[0:j])
+            c = c[j:]
+            jobs.append(job)
+	
+    wait(jobs, timeout=None)
+    print("2 - FINISHED")
+
 
 ################## auxiliares ##################
 def get_all_cards():
