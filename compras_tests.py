@@ -5,6 +5,7 @@
 import time
 import timeit
 import asyncio
+import logging
 import threading
 import argparse
 import blockchain_tests
@@ -21,8 +22,26 @@ cards = all_cards[:arguments.qtd]
 # cpfs = blockchain_tests.criar_portadores(50)
 # cards = blockchain_tests.criar_cartoes(cpfs)
 
+# create logger with 'spam_application'
+logger = logging.getLogger('spam_application')
+logger.setLevel(logging.DEBUG)
+# create file handler which logs even debug messages
+fh = logging.FileHandler('spam.log')
+fh.setLevel(logging.DEBUG)
+# create console handler with a higher log level
+ch = logging.StreamHandler()
+ch.setLevel(logging.ERROR)
+# create formatter and add it to the handlers
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+# add the handlers to the logger
+logger.addHandler(fh)
+logger.addHandler(ch)
+logger.info('creating an instance of auxiliary_module.Auxiliary')
+
 i = timeit.default_timer()
-op = 2 #randint(1,3)
+op = 3 #randint(1,3)
 while True:
     i = timeit.default_timer()
     if op == 1:

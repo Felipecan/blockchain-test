@@ -14,6 +14,7 @@
 import time
 import timeit
 import asyncio
+import logging
 import argparse
 import blockchain_tests as bt
 

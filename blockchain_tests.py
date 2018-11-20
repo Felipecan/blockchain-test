@@ -2,6 +2,7 @@
 import json
 import random
 # import timeit
+import logging
 import requests 
 import pandas as pd 
 from math import floor
@@ -14,14 +15,30 @@ api_url = 'http://localhost:3000/api'
 # api_url = 'http://150.165.167.110/api'
 
 def cadastrar_emissor(emissor):    
-    payload_emissor = {
-        '$class': 'org.conductor.blockchain.Emissor',
-        'emissorId': emissor,
-        'cnpj': '99999999999999'
-    }
-    r = requests.post(api_url + "/org.conductor.blockchain.Emissor", data=json.dumps(payload_emissor), headers={'content-type': 'application/json'})
-    print ('Emissor criado:', emissor)
-    
+    jsons = requests.get(api_url + "/org.conductor.blockchain.Emissor").json()    
+    if(len(jsons) > 0):    
+        emissores = []
+        for em in jsons:
+            emissores.append(em['emissorId'])
+        if(not(emissor in emissores)):
+            payload_emissor = {
+                '$class': 'org.conductor.blockchain.Emissor',
+                'emissorId': emissor,
+                'cnpj': '99999999999999'
+            }
+            r = requests.post(api_url + "/org.conductor.blockchain.Emissor", data=json.dumps(payload_emissor), headers={'content-type': 'application/json'})
+            print('Emissor criado:', emissor)
+        else:
+            print('Emissor já cadastrado.')
+    else:
+        payload_emissor = {
+            '$class': 'org.conductor.blockchain.Emissor',
+            'emissorId': emissor,
+            'cnpj': '99999999999999'
+        }
+        r = requests.post(api_url + "/org.conductor.blockchain.Emissor", data=json.dumps(payload_emissor), headers={'content-type': 'application/json'})
+        print ('Emissor criado:', emissor)
+
 def criar_portador(payload):
     r = requests.post(api_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload), headers={'content-type': 'application/json'})
     # ret = []
@@ -312,9 +329,13 @@ def realizar_compras_3(cards):
     with ThreadPoolExecutor(max_workers=10) as executor:
         jobs=[]
         print(len(cards))
+        index = 0
         for i in range(int(len(cards)/10)):
-            job=executor.submit(realizar_compra, i, cards[i:i+20])
+            if index >= len(cards):
+                break
+            job=executor.submit(realizar_compra, i, cards[index:index+20])
             jobs.append(job)
+            index += 20            
 	
     wait(jobs, timeout=None)
     print("3 - FINISHED")
