@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import random
-# import timeit
+import timeit
 import logging
 import requests 
 import pandas as pd 
@@ -15,6 +15,7 @@ api_url = 'http://localhost:3000/api'
 # api_url = 'http://150.165.167.110/api'
 
 logger = logging.getLogger('__main__.__blockchain_tests__')
+
 
 def cadastrar_emissor(emissor):    
     jsons = requests.get(api_url + "/org.conductor.blockchain.Emissor").json()    
@@ -82,6 +83,10 @@ def criar_portadores(csv_name='', inicio=0, quantidade=20):
     if inicio < 0:
         inicio = 0
 
+    file_portadores = open('portadores.csv', 'w')
+    file_portadores.write("quantidade;tempo\n")
+    file_portadores.write("0;0\n")
+
     csv_file = csv_file.dropna(subset=['cpf', 'nome'])
     csv_file = csv_file.drop_duplicates(subset=['cpf'])
 
@@ -97,12 +102,14 @@ def criar_portadores(csv_name='', inicio=0, quantidade=20):
 
     temp = 0
     total = quantidade
+    time_beg = timeit.default_timer()
     for row in csv_file.itertuples():
         if quantidade == 0:
             break
 
         if temp < inicio:
             temp += 1
+            time_beg = timeit.default_timer()
             continue
 
         cpf = row.cpf.replace('*', '0')
@@ -126,6 +133,10 @@ def criar_portadores(csv_name='', inicio=0, quantidade=20):
         else:            
             logger.debug('Não foi possível cadastradar o portador: ' + payload_portador['nome'])
             logger.debug('Codigo de erro: ' + str(r.status_code) + '. ERRO: ' + str(r.json()['error']['message']))
+        if(quantidade%10 == 0):
+            time_end = timeit.default_timer()                
+            file_portadores.write(str(time_end-time_beg)+";"+str(total-quantidade)+'\n')            
+            time_beg = time_end
     
     # pool = ThreadPoolExecutor(floor(len(payloads)/2))
     # futures = []
@@ -152,6 +163,8 @@ def criar_portadores(csv_name='', inicio=0, quantidade=20):
     #     list_t[i].join()
 
     logger.info(str(len(cpfs)) + ' portadores cadastrados de ' + str(total))
+    file_portadores.flush()
+    file_portadores.close()
     return cpfs
 
 def criar_cartao(payload):    
@@ -180,6 +193,10 @@ def criar_cartoes(cpfs):
     if not cpfs: 
         logger.error('Lista de cpfs vazia. Encerrando programa...')
         return
+       
+    file_cartoes = open('cartoes.csv', 'w')
+    file_cartoes.write("quantidade;tempo\n")
+    file_cartoes.write("0;0\n")
     
     c = get_all_cards()
     if len(c) <= 0:
@@ -208,12 +225,17 @@ def criar_cartoes(cpfs):
     }
 
     r = []
+    time_beg = timeit.default_timer()
     for i in range(len(cpfs)):       
         payload_cartao['portador'] = 'resource:org.conductor.blockchain.Portador#'+cpfs[i]
         payload_cartao['numCartao'] = str(cards[i])
         # payloads.append(payload_cartao)
         # a linha abaixo deve ser comentada ao ser possível usar threads ou algo semelhante
         r.append(requests.post(api_url + '/org.conductor.blockchain.CadastrarCartao', data=json.dumps(payload_cartao), headers={'content-type': 'application/json'}))
+        if((i+1)%10 == 0):
+            time_end = timeit.default_timer()
+            file_cartoes.write(str(time_end-time_beg)+";"+str(i+1)+"\n") 
+            time_beg = time_end  
 
     total = len(cards)
     for i in range(len(r)):
@@ -222,7 +244,7 @@ def criar_cartoes(cpfs):
             logger.debug('Codigo de erro: ' + str(r[i].status_code) + '. ERRO: ' + str(r[i].json()['error']['message']))
             cards.remove(cards[i])
         else:
-            logger.debug(str(total-(total-i)+1) + '/' + str(total) + ' cadastrado. Cartao: ' + str(cards[i]))        
+            logger.debug(str(total-(total-i)+1) + '/' + str(total) + ' cadastrado. Cartao: ' + str(cards[i]))                   
     
     # pool = ThreadPoolExecutor(floor(len(payloads)/2))
     # futures = []
@@ -244,43 +266,10 @@ def criar_cartoes(cpfs):
     # for i in range(len(payloads)):
     #     list_t[i].join()
 
-    logger.info(str(len(cards)) + ' cartoes cadastrados de ' + str(total))    
+    logger.info(str(len(cards)) + ' cartoes cadastrados de ' + str(total))  
+    file_cartoes.flush()  
+    file_cartoes.close()
     return cards
-
-# def realizar_compra(card):
-#     dt = str(datetime.utcnow().isoformat()) 
-#     valor = random.randint(20, 200)                        
-#     # parcelas = str(random.randint(1, 3))
-#     payload = {
-#         '$class': 'org.conductor.blockchain.RealizarCompra',
-#         'cartao': 'resource:org.conductor.blockchain.CartaoCredito#'+str(card),
-#         'destino': 'boteco',
-#         'senha': '1234',
-#         'cvv': '123',
-#         'meio': 'ECOMMERCE',
-#         'mesValidade': 12,
-#         'anoValidade': 2050,
-#         'parcelas': '1', # parcelas
-#         'valor': valor,
-#         'moeda': 'BRL',
-#         'data': dt
-#     }
-#     r = requests.post(api_url + '/org.conductor.blockchain.RealizarCompra', data=json.dumps(payload), headers={'content-type': 'application/json'})
-    
-#     # print('ID: ', id)
-#     # print('time: ', timeit.default_timer() - t_i)
-#     # print('response: ', r.status_code)
-
-# def realizar_compras(cards):
-#     pool = ThreadPoolExecutor(floor(len(cards)/2))
-#     futures = []
-#     for card in cards:
-#         futures.append(pool.submit(realizar_compra, card))
-    
-#     w = wait(futures, timeout=None)    
-#     for response in futures:        
-#         ret = response.result(timeout=None)
-#         print(ret)
 
 def realizar_compra(id, card):
     dt = str(datetime.utcnow().isoformat()) 
@@ -308,7 +297,9 @@ def realizar_compra(id, card):
     logger.debug('Thread id: ' + str(id) + ' finalizada. STATUS_CODE: ' + str(r.status_code))
     return r.status_code
 
-def realizar_compras_1(cards):   
+def realizar_compras_1(cards):  
+    file_compras = open('comprasOP1.csv', 'a')     
+    time_beg = timeit.default_timer()
     with ThreadPoolExecutor(max_workers=len(cards)) as executor:        
         logger.debug('Disparando ' + str(len(cards)) + ' threads')
         jobs=[]             
@@ -317,6 +308,8 @@ def realizar_compras_1(cards):
             jobs.append(job)   
 
     wait(jobs, timeout=None)
+    time_end = timeit.default_timer()
+
     success = 0
     failure = 0
     for response in jobs:        
@@ -324,23 +317,33 @@ def realizar_compras_1(cards):
             failure += 1
         else:
             success += 1
+
+    file_compras.write(str(len(cards))+";"+str(time_end-time_beg)+";"+str(failure)+"\n")
+    file_compras.flush()  
+    file_compras.close()
     logger.info(str(success) + ' foram realizadas com sucesso - ' + str(failure) + ' falharam.')
     logger.debug('Finalizando execucao da OP1...')
 
 
 def realizar_compras_2(cards):
+    file_compras = open('comprasOP2.csv', 'a')
+    time_beg = timeit.default_timer()
     with ThreadPoolExecutor(max_workers=10) as executor:
         logger.debug('Disparando ' + str(10) + ' threads')
         jobs=[]
         q_cards = len(cards)/10
         c = cards
+        tx = 0
         for i in range(10):
             j = random.randint(1,q_cards)
+            tx += j
             job=executor.submit(realizar_compra, i, c[0:j])
             c = c[j:]
-            jobs.append(job)
+            jobs.append(job)            
 	
     wait(jobs, timeout=None)
+    time_end = timeit.default_timer()
+
     success = 0
     failure = 0
     for response in jobs:
@@ -348,6 +351,10 @@ def realizar_compras_2(cards):
             failure += 1
         else:
             success += 1
+
+    file_compras.write(str(tx)+";"+str(time_end-time_beg)+";"+str(failure)+"\n")
+    file_compras.flush()  
+    file_compras.close()
     logger.info(str(success) + ' foram realizadas com sucesso - ' + str(failure) + ' falharam.')
     logger.debug('Finalizando execucao da OP2...')
 

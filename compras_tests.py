@@ -2,6 +2,7 @@
 '''
     Testando o teste.
 '''
+import os
 import time
 import timeit
 import asyncio
@@ -18,7 +19,7 @@ arguments = parser.parse_args()
 logger = logging.getLogger('__main__')
 logger.setLevel(logging.DEBUG)
 fh = logging.FileHandler('./logs/run.log')
-fh.setLevel(logging.INFO)
+fh.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.ERROR)
 formatter = logging.Formatter(fmt='%(asctime)s - [%(levelname)s] - [%(module)s.%(funcName)s:%(lineno)d] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
@@ -34,7 +35,14 @@ all_cards = blockchain_tests.get_all_cards()
 cards = all_cards[:arguments.quantidade]
 
 logger.info('Iniciando transacoes de compra...')
-while True:
+
+file_compras = open('compras.csv', 'w')
+file_compras.write("quantidade;tempo;fracasso\n")
+file_compras.write("0;0;0\n")
+file_compras.flush()
+file_compras.close()
+
+for i in range(10):
     op = 1 #randint(1,3)
     logger.info('OP selecionado: ' + str(op) + '. Executando...')
     i = timeit.default_timer()
