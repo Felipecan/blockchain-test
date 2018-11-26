@@ -11,8 +11,8 @@ from datetime import datetime
 from unidecode import unidecode 
 from concurrent.futures import ThreadPoolExecutor, wait 
 
-api_url = 'http://localhost:3000/api'
-# api_url = 'http://150.165.167.110/api'
+# api_url = 'http://localhost:3000/api'
+api_url = 'http://150.165.167.110/api'
 
 logger = logging.getLogger('__main__.__blockchain_tests__')
 
@@ -135,7 +135,7 @@ def criar_portadores(csv_name='', inicio=0, quantidade=20):
             logger.debug('Codigo de erro: ' + str(r.status_code) + '. ERRO: ' + str(r.json()['error']['message']))
         if(quantidade%10 == 0):
             time_end = timeit.default_timer()                
-            file_portadores.write(str(time_end-time_beg)+";"+str(total-quantidade)+'\n')            
+            file_portadores.write(str(total-quantidade)+";"+str(time_end-time_beg)+'\n')            
             time_beg = time_end
     
     # pool = ThreadPoolExecutor(floor(len(payloads)/2))
@@ -234,7 +234,7 @@ def criar_cartoes(cpfs):
         r.append(requests.post(api_url + '/org.conductor.blockchain.CadastrarCartao', data=json.dumps(payload_cartao), headers={'content-type': 'application/json'}))
         if((i+1)%10 == 0):
             time_end = timeit.default_timer()
-            file_cartoes.write(str(time_end-time_beg)+";"+str(i+1)+"\n") 
+            file_cartoes.write(str(i+1)+";"+str(time_end-time_beg)+"\n") 
             time_beg = time_end  
 
     total = len(cards)

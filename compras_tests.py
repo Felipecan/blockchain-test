@@ -42,9 +42,13 @@ file_compras.write("0;0;0\n")
 file_compras.flush()
 file_compras.close()
 
-for i in range(10):
+q = 0
+for i in range(6):
     op = 1 #randint(1,3)
+    q += 100
+    cards = all_cards[:q]
     logger.info('OP selecionado: ' + str(op) + '. Executando...')
+    logger.info('Quantidade de cartoes: ' + str(q))
     i = timeit.default_timer()
     if op == 1:
         blockchain_tests.realizar_compras_1(cards)
