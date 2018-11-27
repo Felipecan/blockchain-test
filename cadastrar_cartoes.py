@@ -5,7 +5,10 @@ import timeit
 import asyncio
 import logging
 import argparse
+import pandas as pd
 import blockchain_tests as bt
+import matplotlib.pyplot as plt
+from reportlab.pdfgen import canvas
 
 parser = argparse.ArgumentParser(description='Script para popular a Blockchain')
 
@@ -56,3 +59,5 @@ if(isinstance(cpfs, list)):
     cards = bt.criar_cartoes(cpfs)
 f = timeit.default_timer()
 logger.info('Cartões cadastrados em: ' + str(f-i) + 's')
+
+# plt.show()

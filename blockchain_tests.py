@@ -9,6 +9,7 @@ from math import floor
 from threading import Thread
 from datetime import datetime
 from unidecode import unidecode 
+from reportlab.pdfgen import canvas
 from concurrent.futures import ThreadPoolExecutor, wait 
 
 # api_url = 'http://localhost:3000/api'
@@ -17,29 +18,192 @@ api_url = 'http://150.165.167.110/api'
 logger = logging.getLogger('__main__.__blockchain_tests__')
 
 
-def cadastrar_emissor(emissor):    
-    jsons = requests.get(api_url + "/org.conductor.blockchain.Emissor").json()    
-    if(len(jsons) > 0):    
+def cadastrar_encargos():
+    payload_encargo = {
+        "$class": "org.conductor.encargo.CadastrarEncargoGenerico",
+        "nome": "PAGOUTUDO",
+        "taxa": 0,
+        "expressaoSelecao": "totalPago >= totalFatura",
+        "expressaoExecucao": " "
+    }
+    r = requests.post(api_url + "/org.conductor.encargo.CadastrarEncargoGenerico", data=json.dumps(payload_encargo), headers={'content-type': 'application/json'})
+    print("1 ", r.status_code)
+
+    payload_encargo = {
+        "$class": "org.conductor.encargo.CadastrarEncargoGenerico",
+        "nome": "MINIMO",
+        "taxa": 15,
+        "expressaoSelecao": "totalPago >= totalFatura*taxa/100",
+        "expressaoExecucao": " "
+    }
+    r = requests.post(api_url + "/org.conductor.encargo.CadastrarEncargoGenerico", data=json.dumps(payload_encargo), headers={'content-type': 'application/json'})
+    print("2 ", r.status_code)
+
+    payload_encargo = {
+        "$class": "org.conductor.encargo.CadastrarEncargoGenerico",
+        "nome": "ROTATIVO",
+        "taxa": 15.6,
+        "expressaoSelecao": "totalPago >= totalFatura*taxa/100",
+        "expressaoExecucao": "totalFatura += totalFatura*taxa/100"
+    }
+    r = requests.post(api_url + "/org.conductor.encargo.CadastrarEncargoGenerico", data=json.dumps(payload_encargo), headers={'content-type': 'application/json'})
+    print("3 ", r.status_code)
+
+    payload_encargo = {
+        "$class": "org.conductor.encargo.CadastrarEncargoGenerico",
+        "nome": "PARCELAMENTO",
+        "taxa": 10,
+        "expressaoSelecao": "totalPago == (totalCompras + totalCompras*taxa/100)/4",
+        "expressaoExecucao": "totalFatura = (totalFatura + totalFatura*taxa/100)/4"
+    }
+    r = requests.post(api_url + "/org.conductor.encargo.CadastrarEncargoGenerico", data=json.dumps(payload_encargo), headers={'content-type': 'application/json'})
+    print("4 ", r.status_code)
+
+    payload_encargo = {
+        "$class": "org.conductor.encargo.CadastrarEncargoGenerico",
+        "nome": "EXTRA",
+        "taxa": 0,
+        "expressaoSelecao": "totalPago > totalFatura",
+        "expressaoExecucao": " "
+    }
+    r = requests.post(api_url + "/org.conductor.encargo.CadastrarEncargoGenerico", data=json.dumps(payload_encargo), headers={'content-type': 'application/json'})
+    print("5 ", r.status_code)
+
+    payload_encargo = {
+        "$class": "org.conductor.encargo.CadastrarEncargoGenerico",
+        "nome": "INADIMPLENCIA",
+        "taxa": 0,
+        "expressaoSelecao": "totalPago == 0",
+        "expressaoExecucao": " "
+    }
+    r = requests.post(api_url + "/org.conductor.encargo.CadastrarEncargoGenerico", data=json.dumps(payload_encargo), headers={'content-type': 'application/json'})
+    print("6 ", r.status_code)
+    print("Fim...")
+
+def cadastrar_regras():
+    encargos_json = requests.get(api_url + "/org.conductor.encargo.EncargoGenerico").json()
+    # print(encargos_json)
+    pagoutudoID = ''
+    inadID = ''
+    extraID = ''
+    parcelamentoID = ''
+    rotativoID = ''
+    minimoID = ''
+    for encargos in encargos_json:
+        if(encargos["nome"] == "PAGOUTUDO"):
+            pagoutudoID = encargos["encargoId"]
+        if(encargos["nome"] == "EXTRA"):
+            extraID = encargos["encargoId"]
+        if(encargos["nome"] == "INADIMPLENCIA"):
+            inadID = encargos["encargoId"]
+        if(encargos["nome"] == "MINIMO"):
+            minimoID = encargos["encargoId"]
+        if(encargos["nome"] == "PARCELAMENTO"):
+            parcelamentoID = encargos["encargoId"]
+        if(encargos["nome"] == "ROTATIVO"):
+            rotativoID = encargos["encargoId"]
+            
+    payload_regra = {
+        "$class": "org.conductor.regra.CadastrarRegraGenerica",
+        "prioridade": 4,  
+        "encargosDepende": [' '],
+        "encargosBloqueia": ["resource:org.conductor.encargo.EncargoGenerico#" + str(inadID)],
+        "encargosExecutar": ["resource:org.conductor.encargo.EncargoGenerico#" + str(pagoutudoID)]
+    }
+    print(payload_regra)
+    r = requests.post(api_url + "/org.conductor.regra.CadastrarRegraGenerica", data=json.dumps(payload_regra), headers={'content-type': 'application/json'})    
+    print('1', r.status_code)
+
+    payload_regra = {
+        "$class": "org.conductor.regra.CadastrarRegraGenerica",
+        "prioridade": 4,  
+        "encargosDepende": [' '],
+        "encargosBloqueia": ["resource:org.conductor.encargo.EncargoGenerico#" + str(pagoutudoID)],
+        "encargosExecutar": ["resource:org.conductor.encargo.EncargoGenerico#" + str(inadID)]
+    }
+    print(payload_regra)
+    r = requests.post(api_url + "/org.conductor.regra.CadastrarRegraGenerica", data=json.dumps(payload_regra), headers={'content-type': 'application/json'})    
+    print('2', r.status_code)
+
+    payload_regra = {
+        "$class": "org.conductor.regra.CadastrarRegraGenerica",
+        "prioridade": 3,  
+        "encargosDepende": ["resource:org.conductor.encargo.EncargoGenerico#" + str(pagoutudoID)],
+        "encargosBloqueia": [' '],
+        "encargosExecutar": ["resource:org.conductor.encargo.EncargoGenerico#" + str(extraID)]
+    }
+    print(payload_regra)
+    r = requests.post(api_url + "/org.conductor.regra.CadastrarRegraGenerica", data=json.dumps(payload_regra), headers={'content-type': 'application/json'})    
+    print('3', r.status_code)
+
+    payload_regra = {
+        "$class": "org.conductor.regra.CadastrarRegraGenerica",
+        "prioridade": 3,  
+        "encargosDepende": [' '],
+        "encargosBloqueia": ["resource:org.conductor.encargo.EncargoGenerico#" + str(inadID),
+                    "resource:org.conductor.encargo.EncargoGenerico#" + str(pagoutudoID)],
+        "encargosExecutar": ["resource:org.conductor.encargo.EncargoGenerico#" + str(minimoID)]
+    }
+    print(payload_regra)
+    r = requests.post(api_url + "/org.conductor.regra.CadastrarRegraGenerica", data=json.dumps(payload_regra), headers={'content-type': 'application/json'})    
+    print('4', r.status_code)
+
+    payload_regra = {
+        "$class": "org.conductor.regra.CadastrarRegraGenerica",
+        "prioridade": 2,  
+        "encargosDepende": ["resource:org.conductor.encargo.EncargoGenerico#"  + str(minimoID)],
+        "encargosBloqueia": ["resource:org.conductor.encargo.EncargoGenerico#" + str(rotativoID)],
+        "encargosExecutar": ["resource:org.conductor.encargo.EncargoGenerico#" + str(parcelamentoID)]
+    }
+    print(payload_regra)
+    r = requests.post(api_url + "/org.conductor.regra.CadastrarRegraGenerica", data=json.dumps(payload_regra), headers={'content-type': 'application/json'})
+    print('5', r.status_code)
+
+    payload_regra = {
+        "$class": "org.conductor.regra.CadastrarRegraGenerica",
+        "prioridade": 1,
+        "encargosDepende": ["resource:org.conductor.encargo.EncargoGenerico#" + str(minimoID)],
+        "encargosBloqueia": ["resource:org.conductor.encargo.EncargoGenerico#" + str(parcelamentoID)],
+        "encargosExecutar": ["resource:org.conductor.encargo.EncargoGenerico#" + str(rotativoID)]
+    }
+    print(payload_regra)
+    r = requests.post(api_url + "/org.conductor.regra.CadastrarRegraGenerica", data=json.dumps(payload_regra), headers={'content-type': 'application/json'})
+    print('6', r.status_code)
+
+
+def cadastrar_emissor(emissor):       
+    emissores_json = requests.get(api_url + "/org.conductor.emissor.Emissor").json()        
+    if(len(emissores_json) > 0):            
         emissores = []
-        for em in jsons:
+        for em in emissores_json:
             emissores.append(em['emissorId'])
         if(not(emissor in emissores)):
+            encargos_json = requests.get(api_url + "/org.conductor.encargo.EncargoGenerico").json()
+            encargos = []
+            for encargo in encargos_json:
+                encargos.append("resource:org.conductor.encargo.EncargoGenerico#" + str(encargo["encargoId"]))
             payload_emissor = {
-                '$class': 'org.conductor.blockchain.Emissor',
+                '$class': 'org.conductor.emissor.CadastrarEmissor',
                 'emissorId': emissor,
-                'cnpj': str(random.randint(10000000000000, 99999999999999))
+                'cnpj': str(random.randint(10000000000000, 99999999999999)),
+                'encargoGenerico': encargos
             }
-            r = requests.post(api_url + "/org.conductor.blockchain.Emissor", data=json.dumps(payload_emissor), headers={'content-type': 'application/json'})
+            r = requests.post(api_url + "/org.conductor.emissor.CadastrarEmissor", data=json.dumps(payload_emissor), headers={'content-type': 'application/json'})           
             logger.info('Emissor cadastrado: ' + emissor)
         else:
             logger.warning('Emissor ' + emissor + ' já cadastrado anteriormente.')
     else:
+        encargos_json = requests.get(api_url + "/org.conductor.encargo.EncargoGenerico").json()
+        encargos = []
+        for encargo in encargos_json:
+            encargos.append("resource:org.conductor.encargo.EncargoGenerico#" + str(encargo["encargoId"]))            
         payload_emissor = {
-            '$class': 'org.conductor.blockchain.Emissor',
+            '$class': 'org.conductor.emissor.CadastrarEmissor',
             'emissorId': emissor,
-            'cnpj': str(random.randint(10000000000000, 99999999999999))
+            'cnpj': str(random.randint(10000000000000, 99999999999999)),
+            'encargoGenerico': encargos
         }
-        r = requests.post(api_url + "/org.conductor.blockchain.Emissor", data=json.dumps(payload_emissor), headers={'content-type': 'application/json'})
+        r = requests.post(api_url + "/org.conductor.emissor.CadastrarEmissor", data=json.dumps(payload_emissor), headers={'content-type': 'application/json'})        
         logger.info('Emissor cadastrado: ' + emissor)   
 
 def criar_portador(payload):
@@ -93,7 +257,7 @@ def criar_portadores(csv_name='', inicio=0, quantidade=20):
     cpfs = []
     payloads = []
     payload_portador = {
-        '$class': 'org.conductor.blockchain.CadastrarPortador',
+        '$class': 'org.conductor.portador.CadastrarPortador',
         'cpf': ' ',
         'nome': ' ',
         'sobrenome': ' ',
@@ -126,7 +290,7 @@ def criar_portadores(csv_name='', inicio=0, quantidade=20):
         # payloads.append(payload_portador)
         quantidade -= 1
         # a linha abaixo deve ser comentada ao ser possível usar threads ou algo semelhante
-        r = requests.post(api_url + '/org.conductor.blockchain.CadastrarPortador', data=json.dumps(payload_portador), headers={'content-type': 'application/json'})    
+        r = requests.post(api_url + '/org.conductor.portador.CadastrarPortador', data=json.dumps(payload_portador), headers={'content-type': 'application/json'})    
         if(r.status_code < 300 and r.status_code > 100):    
             logger.debug(str(total-quantidade) + '/' + str(total) + ' cadastrado. Portador: ' + payload_portador['nome'])
             cpfs.append(cpf)
@@ -210,8 +374,7 @@ def criar_cartoes(cpfs):
     
     payloads = []
     payload_cartao = {
-        '$class': 'org.conductor.blockchain.CadastrarCartao',
-        'emissor': 'resource:org.conductor.blockchain.Emissor#Renner',
+        '$class': 'org.conductor.cartaocredito.CadastrarCartao',        
         'portador': ' ',
         'numCartao': ' ',
         'estado': 'ATIVO',
@@ -227,11 +390,11 @@ def criar_cartoes(cpfs):
     r = []
     time_beg = timeit.default_timer()
     for i in range(len(cpfs)):       
-        payload_cartao['portador'] = 'resource:org.conductor.blockchain.Portador#'+cpfs[i]
+        payload_cartao['portador'] = 'resource:org.conductor.portador.Portador#'+cpfs[i]
         payload_cartao['numCartao'] = str(cards[i])
         # payloads.append(payload_cartao)
         # a linha abaixo deve ser comentada ao ser possível usar threads ou algo semelhante
-        r.append(requests.post(api_url + '/org.conductor.blockchain.CadastrarCartao', data=json.dumps(payload_cartao), headers={'content-type': 'application/json'}))
+        r.append(requests.post(api_url + '/org.conductor.cartaocredito.CadastrarCartao', data=json.dumps(payload_cartao), headers={'content-type': 'application/json'}))
         if((i+1)%10 == 0):
             time_end = timeit.default_timer()
             file_cartoes.write(str(i+1)+";"+str(time_end-time_beg)+"\n") 
@@ -249,10 +412,10 @@ def criar_cartoes(cpfs):
     # pool = ThreadPoolExecutor(floor(len(payloads)/2))
     # futures = []
     # for payload in payloads:
-    #     futures.append(pool.submit(criar_cartao, payload))
+    #     futures.append(pool.org.conductor.blockchain.Portador
 
-    # w = wait(futures, timeout=None)    
-    # for response in futures:
+    # w = wait(futures, timeouorg.conductor.blockchain.Portador
+    # for response in futures:org.conductor.blockchain.Portador
     #     print(response.result(timeout=0))
 
     ####### diretamente com Threads #######
@@ -274,26 +437,26 @@ def criar_cartoes(cpfs):
 def realizar_compra(id, card):
     dt = str(datetime.utcnow().isoformat()) 
     valor = random.randint(20, 200)                        
-    # parcelas = str(random.randint(1, 3))    
+    parcelas = str(random.randint(1, 6))    
     payload = []
     for i in range(len(card)):
         payload.append({
-            '$class': 'org.conductor.blockchain.RealizarCompra',
-            'cartao': 'resource:org.conductor.blockchain.CartaoCredito#' + str(card[i]),
+            '$class': 'org.conductor.compra.RealizarCompra',
+            'cartao': 'resource:org.conductor.cartaocredito.CartaoCredito#' + str(card[i]),
             'destino': 'boteco',
             'senha': '1234',
             'cvv': '123',
             'meio': 'ECOMMERCE',
             'mesValidade': 12,
             'anoValidade': 2050,
-            'parcelas': '1', # parcelas
+            'parcelas': str(parcelas),
             'valor': valor,
             'moeda': 'BRL',
             'data': dt
         })
     logger.debug('Thread id: ' + str(id) + '. Quantidade de cartoes: ' + str(len(card)))            
     # r = requests.post(api_url + '/RealizarCompra', data=json.dumps(payload), headers={"X-Access-Token":"jf8NmdLwG6DYDegnkZU81f2IMal9AUZ3O1wLvvUzvXbcx8RmfsujqP8bbsusCaAG","content-type": "application/json"})
-    r = requests.post(api_url + '/org.conductor.blockchain.RealizarCompra', data=json.dumps(payload), headers={"X-Access-Token":"jf8NmdLwG6DYDegnkZU81f2IMal9AUZ3O1wLvvUzvXbcx8RmfsujqP8bbsusCaAG","content-type": "application/json"})    
+    r = requests.post(api_url + '/org.conductor.compra.RealizarCompra', data=json.dumps(payload), headers={"X-Access-Token":"jf8NmdLwG6DYDegnkZU81f2IMal9AUZ3O1wLvvUzvXbcx8RmfsujqP8bbsusCaAG","content-type": "application/json"})    
     logger.debug('Thread id: ' + str(id) + ' finalizada. STATUS_CODE: ' + str(r.status_code))
     return r.status_code
 
@@ -420,7 +583,7 @@ def get_all_cards():
             Retorna uma lista de strings com todos os cartões cadastrados.
     '''  
     cards = []
-    r = requests.get(api_url + '/org.conductor.blockchain.CartaoCredito')
+    r = requests.get(api_url + '/org.conductor.cartaocredito.CartaoCredito')
     jsons = r.json()        
     for json in jsons:        
         cards.append(json['numeroCartao'])
@@ -428,11 +591,116 @@ def get_all_cards():
     return cards    
 
 def get_all_compras():
-    r = requests.get(api_url + '/org.conductor.blockchain.Compra')
+    r = requests.get(api_url + '/org.conductor.compra.Compra')
     jsons = r.json()
     return jsons
 
 def get_all_portadores():
-    r = requests.get(api_url + '/org.conductor.blockchain.Portador')
+    r = requests.get(api_url + '/org.conductor.portador.Portador')
     jsons = r.json()
     return jsons  
+
+def gerar_grafico(csv_name):
+    csv = pd.read_csv(csv_name, sep=';', encoding='ISO-8859-1')
+    xticks = ['' for _ in range(len(csv.index))]
+    v = 50
+    xticks[0] = '0'
+    for i in range(1, len(xticks)):
+        if(i%5 == 0):
+            xticks[i] = str(v)
+            v += 50
+    ax = csv.plot.bar(x='quantidade', y='tempo', rot=0, color="blue", alpha=0.7, width=0.4, legend=False)
+    ax.set_ylim(21, 25)
+    ax.set_xticklabels(xticks)
+    # ajeitar o csv_name para pegar somente o nome portadores e fazer os labels corretamente.
+    ax.set_label("Cadastro de portadores")
+    ax.set_xlabel("Quantidade de transações para cadastro de portadores")
+    ax.set_ylabel("Tempo gasto em segundos")
+    plt.draw()
+
+def criar_relatorio():
+
+    #media
+    #import statistics
+    #statistics.mean()
+    #moda
+    #statistics.mode()
+    #desvio padrão
+    #vetor.std()
+
+    try:
+        nome_pdf = "RELATORIO" #input('Informe o nome do PDF: ')
+        pdf = canvas.Canvas('{}.pdf'.format(nome_pdf))
+        pdf.setTitle(nome_pdf)
+
+        maquinas = 0
+        orderes = 0
+        peers = 0
+        cas = 0
+        kafkas = 0
+        zookeeper = 0
+        couchdb = 0
+        qtd_portador = 0
+        qtd_cartao = 0
+        qtd_compra = 0
+
+        pdf.setFont("Helvetica-Bold", 16)
+        pdf.drawString(150, 760, 'Relatório de desempenho da blockchain')
+        pdf.setFont("Helvetica", 14)
+        pdf.drawString(50, 710, 'Especificações:')
+        pdf.drawString(90, 690, '- ' + str(maquinas) + ' Máquinas com as seguintes configurações:')
+        pdf.drawString(130, 670, '- CPU - Intel Core I5-6500 @ 3.20GHz x 4')
+        pdf.drawString(130, 650, '- Memória RAM - 7.7 GiB')
+        pdf.drawString(130, 630, '- Disco Rígido - 500 GB')
+        pdf.drawString(130, 610, '- S.O. - Ubuntu 16.04 LTS')
+        pdf.drawString(130, 590, '- Docker Version 17.06.2-ee.17, build 66834de')
+        pdf.drawString(170, 570, '- Imagens Docker:')
+        pdf.drawString(210, 550, '- hyperledger/fabric-peer:1.2.0')
+        pdf.drawString(210, 530, '- hyperledger/fabric-orderer:1.2.0')
+        pdf.drawString(210, 510, '- hyperledger/fabric-ca:1.2.0')
+        pdf.drawString(210, 490, '- hyperledger/fabric-couchdb:0.4.14')
+        pdf.drawString(210, 470, '- hyperledger/fabric-kafka:0.4.14')
+        pdf.drawString(210, 450, '- hyperledger/fabric-zookeeper:0.4.14')
+        pdf.drawString(170, 430, '- Containers:')
+        pdf.drawString(210, 410, '- peers: ' + str(peers))
+        pdf.drawString(210, 390, '- orderers: ' + str(orderes))
+        pdf.drawString(210, 370, '- cas: ' + str(cas))
+        pdf.drawString(210, 350, '- couchdb: ' + str(couchdb))
+        pdf.drawString(210, 330, '- kafkas: ' + str(kafkas))
+        pdf.drawString(210, 310, '- zookeepers: ' + str(zookeeper))
+        pdf.drawString(50, 290, 'Casos de testes:')
+        pdf.drawString(90, 270, 'Cadastro de portadores: ' + str(qtd_portador))
+        pdf.drawString(90, 250, 'Cadastro de cartões: ' + str(qtd_cartao))
+        pdf.drawString(90, 230, 'Transações de compras: ' + str(qtd_compra))
+        pdf.showPage()
+
+        #onde tiver xxx trocar por variavel correspondente
+
+        pdf.setFont("Helvetica-Bold", 16)
+        pdf.drawString(165, 760, 'TESTE – CADASTRAR_PORTADOR')
+        pdf.setFont("Helvetica", 14)
+        pdf.drawString(50, 710, 'Para o teste “CADASTRAR_PORTADOR” obtivemos as seguintes métricas:')
+        pdf.drawString(90, 690, '- Foram cadastrado um total de xxx de xxx com um total de xxx falhas')
+        pdf.drawString(90, 670, '- Tempo médio para cadastra de xxx em xxx portadores – xxx/s')
+        pdf.drawString(90, 650, '- Taxa de Cadastros por segundos – xxx/s')
+        pdf.drawString(90, 630, '- Desvio Padrão do tempo médio de  +/- xxx segundos')
+        pdf.drawImage("portadores.png", 66, 100, width=640/1.3, height=480/1.3)
+
+        pdf.showPage()
+
+        pdf.setFont("Helvetica-Bold", 16)
+        pdf.drawString(165, 760, 'TESTE – CADASTRAR_CARTÕES')
+        pdf.setFont("Helvetica", 14)
+        pdf.drawString(50, 710, 'Para o teste “CADASTRAR_CARTÕES” obtivemos as seguintes métricas:')
+        pdf.drawString(90, 690, '- Foram cadastrado um total de xxx de xxx com um total de xxx falhas')
+        pdf.drawString(90, 670, '- Tempo médio para cadastra de xxx em xxx cartões – xxx/s')
+        pdf.drawString(90, 650, '- Taxa de Cadastros por segundos – xxx/s')
+        pdf.drawString(90, 630, '- Desvio Padrão do tempo médio de  +/- xxx segundos')
+        pdf.drawImage("cartoes.png", 66, 100, width=640/1.3, height=480/1.3)
+
+        pdf.showPage()
+        pdf.save()
+        print('{}.pdf criado com sucesso!'.format(nome_pdf))
+    except:
+        print('Erro ao gerar {}.pdf'.format(nome_pdf))
+

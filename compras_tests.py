@@ -45,8 +45,8 @@ file_compras.close()
 q = 0
 for i in range(6):
     op = 1 #randint(1,3)
-    q += 100
-    cards = all_cards[:q]
+    # q += 100
+    # cards = all_cards[:q]
     logger.info('OP selecionado: ' + str(op) + '. Executando...')
     logger.info('Quantidade de cartoes: ' + str(q))
     i = timeit.default_timer()
