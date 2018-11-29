@@ -48,6 +48,15 @@ class Blockchain:
         self.logger.info('Cadastrando encargos...')
         payload_encargo = {
             "$class": "org.conductor.encargo.CadastrarEncargoGenerico",
+            "nome": "EMPTY",
+            "taxa": 0,
+            "expressaoSelecao": "totalPago >= totalFatura",
+            "expressaoExecucao": " "
+        }
+        self.cadastrar_encargo(payload_encargo)
+
+        payload_encargo = {
+            "$class": "org.conductor.encargo.CadastrarEncargoGenerico",
             "nome": "PAGOUTUDO",
             "taxa": 0,
             "expressaoSelecao": "totalPago >= totalFatura",
@@ -107,9 +116,9 @@ class Blockchain:
         # r = requests.post(api + "/org.conductor.regra.CadastrarRegraGenerica", data=json.dumps(payload), headers={'content-type': 'application/json'})    
         r = requests.post(self.api_url + "/org.conductor.regra.CadastrarRegraGenerica", data=json.dumps(payload), headers={'content-type': 'application/json'})    
         if(r.status_code >= 200 and r.status_code < 300):
-            self.logger.debug('Regra cadastrado: {}'.format(payload))
+            self.logger.debug('Regra cadastrada: {}'.format(payload))
         else:
-            self.logger.error('Encargo não cadastrado {}'.format(payload['nome']))
+            self.logger.error('Regra não cadastrada {}'.format(payload))
 
 
     def cadastrar_regras(self):
@@ -123,6 +132,7 @@ class Blockchain:
         parcelamentoID = ''
         rotativoID = ''
         minimoID = ''
+        emptyID = ''
         for encargos in encargos_json:
             if(encargos["nome"] == "PAGOUTUDO"):
                 pagoutudoID = encargos["encargoId"]
@@ -135,13 +145,15 @@ class Blockchain:
             if(encargos["nome"] == "PARCELAMENTO"):
                 parcelamentoID = encargos["encargoId"]
             if(encargos["nome"] == "ROTATIVO"):
-                rotativoID = encargos["encargoId"]
-
+                rotativoID = encargos["encargoId"]        
+            if(encargos["nome"] == "EMPTY"):
+                emptyID = encargos["encargoId"]
+        
         self.logger.info('Cadastrando regras...')            
         payload_regra = {
             "$class": "org.conductor.regra.CadastrarRegraGenerica",
             "prioridade": 4,  
-            "encargosDepende": [' '],
+            "encargosDepende": ["resource:org.conductor.encargo.EncargoGenerico#" + str(emptyID)],
             "encargosBloqueia": ["resource:org.conductor.encargo.EncargoGenerico#" + str(inadID)],
             "encargosExecutar": ["resource:org.conductor.encargo.EncargoGenerico#" + str(pagoutudoID)]
         }
@@ -150,7 +162,7 @@ class Blockchain:
         payload_regra = {
             "$class": "org.conductor.regra.CadastrarRegraGenerica",
             "prioridade": 4,  
-            "encargosDepende": [' '],
+            "encargosDepende": ["resource:org.conductor.encargo.EncargoGenerico#" + str(emptyID)],
             "encargosBloqueia": ["resource:org.conductor.encargo.EncargoGenerico#" + str(pagoutudoID)],
             "encargosExecutar": ["resource:org.conductor.encargo.EncargoGenerico#" + str(inadID)]
         }
@@ -160,7 +172,7 @@ class Blockchain:
             "$class": "org.conductor.regra.CadastrarRegraGenerica",
             "prioridade": 3,  
             "encargosDepende": ["resource:org.conductor.encargo.EncargoGenerico#" + str(pagoutudoID)],
-            "encargosBloqueia": [' '],
+            "encargosBloqueia": ["resource:org.conductor.encargo.EncargoGenerico#" + str(emptyID)],
             "encargosExecutar": ["resource:org.conductor.encargo.EncargoGenerico#" + str(extraID)]
         }
         self.cadastrar_regra(payload_regra)    
@@ -168,7 +180,7 @@ class Blockchain:
         payload_regra = {
             "$class": "org.conductor.regra.CadastrarRegraGenerica",
             "prioridade": 3,  
-            "encargosDepende": [' '],
+            "encargosDepende": ["resource:org.conductor.encargo.EncargoGenerico#" + str(emptyID)],
             "encargosBloqueia": ["resource:org.conductor.encargo.EncargoGenerico#" + str(inadID),
                         "resource:org.conductor.encargo.EncargoGenerico#" + str(pagoutudoID)],
             "encargosExecutar": ["resource:org.conductor.encargo.EncargoGenerico#" + str(minimoID)]
@@ -319,7 +331,7 @@ class Blockchain:
             r = self.cadastrar_portador(payload_portador)
             quantidade -= 1
 
-            if(r.status_code < 300 and r.status_code > 100):                
+            if(r.status_code >= 200 and r.status_code < 300):                
                 self.logger.debug('{}/{} cadastrado. Portador: {}'.format((total-quantidade), total, payload_portador['nome']))
                 cpfs.append(cpf)
                 self.dado_relatorio["portadores_cadastrados"] += 1
@@ -400,15 +412,16 @@ class Blockchain:
             payload_cartao['portador'] = 'resource:org.conductor.portador.Portador#'+cpfs[i]
             payload_cartao['numCartao'] = str(cards[i])
 
-            r = self.cadastrar_cartao(payload_cartao)
-            if(r.status_code >= 300 and r.status_code <= 100):  
+            r = self.cadastrar_cartao(payload_cartao)            
+            if(r.status_code >= 200 and r.status_code < 300):  
+                crs.append(cards[i])
+                self.logger.debug('{}/{} cadastrado. Cartao: {}'.format(len(crs), len(cards), cards[i]))  
+                self.dado_relatorio["cartoes_cadastrados"] += 1                
+            else:
                 self.dado_relatorio["cartoes_erro_medio"].append(timeit.default_timer()-time_ii)   
                 self.logger.debug('Não foi possível cadastradar o cartao: {}'.format(cards[i]))
                 self.logger.debug('Codigo de erro: {}. ERRO: {}'.format(r.status_code, r.json()['error']['message']))                        
-            else:
-                crs.append(cards[i])
-                self.logger.debug('{}/{} cadastrado. Cartao: {}'.format(len(crs), len(cards), cards[i]))  
-                self.dado_relatorio["cartoes_cadastrados"] += 1
+                
 
             if((i+1)%10 == 0):
                 time_end = timeit.default_timer()
@@ -465,10 +478,10 @@ class Blockchain:
         success = 0
         failure = 0
         for response in jobs:        
-            if(response.result(timeout=None).status_code >= 300 and response.result(timeout=None).status_code <= 100):   
-                failure += 1
-            else:
+            if(response.result(timeout=None).status_code >= 200 and response.result(timeout=None).status_code < 300):   
                 success += 1
+            else:
+                failure += 1
 
         file_compras.write(str(len(cards))+";"+str(time_end-time_beg)+";"+str(failure)+"\n")
         file_compras.flush()  
@@ -483,7 +496,7 @@ class Blockchain:
         with ThreadPoolExecutor(max_workers=10) as executor:
             self.logger.debug('Disparando {} threads'.format(10))
             jobs=[]
-            q_cards = len(cards)/10
+            q_cards = math.floor(len(cards)/10)
             c = cards
             tx = 0
             for i in range(10):
@@ -498,11 +511,11 @@ class Blockchain:
 
         success = 0
         failure = 0
-        for response in jobs:
-            if(response.result(timeout=None).status_code >= 300 and response.result(timeout=None).status_code <= 100):   
-                failure += 1
-            else:
+        for response in jobs:        
+            if(response.result(timeout=None).status_code >= 200 and response.result(timeout=None).status_code < 300):   
                 success += 1
+            else:
+                failure += 1
 
         file_compras.write(str(tx)+";"+str(time_end-time_beg)+";"+str(failure)+"\n")
         file_compras.flush()  
@@ -512,26 +525,52 @@ class Blockchain:
 
 
     def realizar_compras_3(self, cards):
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            self.logger.debug('Disparando ' + str(10) + ' threads')
-            jobs=[]
-            q_cards = len(cards)/10
-            index = 0        
-            for i in range(10):            
-                job=executor.submit(self.realizar_compra, i, cards[index:index+q_cards])
-                jobs.append(job)
-                index += 20            
-        
+        file_compras = open('comprasOP3.csv', 'a')     
+        time_beg = timeit.default_timer()
+        with ThreadPoolExecutor(max_workers=len(cards)) as executor:        
+            self.logger.debug('Disparando {} threads'.format(len(cards)))
+            jobs=[]             
+            for i in range(len(cards)):            
+                job=executor.submit(self.realizar_compra, i, cards[i:i+1])
+                jobs.append(job)   
+
         wait(jobs, timeout=None)
+        time_end = timeit.default_timer()
+
         success = 0
         failure = 0
-        for response in jobs:
-            if(response.result(timeout=None).status_code >= 300 and response.result(timeout=None).status_code <= 100):   
-                failure += 1
-            else:
+        for response in jobs:        
+            if(response.result(timeout=None).status_code >= 200 and response.result(timeout=None).status_code < 300):   
                 success += 1
+            else:
+                failure += 1
+
+        file_compras.write(str(len(cards))+";"+str(time_end-time_beg)+";"+str(failure)+"\n")
+        file_compras.flush()  
+        file_compras.close()
         self.logger.info('{} foram realizadas com sucesso - {} falharam.'.format(success, failure))
         self.logger.debug('Finalizando execucao da OP3...')
+
+        # with ThreadPoolExecutor(max_workers=10) as executor:
+        #     self.logger.debug('Disparando ' + str(10) + ' threads')
+        #     jobs=[]
+        #     q_cards = len(cards)/10
+        #     index = 0        
+        #     for i in range(10):            
+        #         job=executor.submit(self.realizar_compra, i, cards[index:index+q_cards])
+        #         jobs.append(job)
+        #         index += 20            
+        
+        # wait(jobs, timeout=None)
+        # success = 0
+        # failure = 0
+        # for response in jobs:
+        #     if(response.result(timeout=None).status_code >= 300 and response.result(timeout=None).status_code <= 100):   
+        #         failure += 1
+        #     else:
+        #         success += 1
+        # self.logger.info('{} foram realizadas com sucesso - {} falharam.'.format(success, failure))
+        # self.logger.debug('Finalizando execucao da OP3...')
 
 
     def realizar_compras_4(self, cards):
@@ -603,7 +642,7 @@ class Blockchain:
         jsons = r.json()
         return jsons  
 
-    def gerar_grafico(self, csv_name):
+    def gerar_grafico_pc(self, csv_name):
         csv = pd.read_csv(csv_name, sep=';', encoding='ISO-8859-1')
         xticks = ['' for _ in range(len(csv.index))]
         v = 50
@@ -612,7 +651,7 @@ class Blockchain:
             if(i%5 == 0):
                 xticks[i] = str(v)
                 v += 50
-        ax = csv.plot.bar(x='quantidade', y='tempo', rot=0, color="blue", alpha=0.7, width=0.4, legend=False)
+        ax = csv.plot.bar(x='quantidade', y='tempo', rot=0, color="blue", alpha=0.7, width=0.4)
         m = csv["tempo"].mean()
         mx = csv["tempo"].max()
         ax.set_ylim(m-15.5, mx+10.5)
@@ -623,6 +662,40 @@ class Blockchain:
         ax.set_ylabel("Tempo gasto em segundos")
         # plt.draw()
         plt.savefig('{}.png'.format(file_name))
+
+
+    def gerar_grafico_c(self, csv_name):
+    
+        csv = pd.read_csv(csv_name, sep=';', encoding='ISO-8859-1')
+        ax = csv.plot.bar(x='quantidade', y='tempo', rot=0, color="red", alpha=0.7, width=0.4)
+        
+        xticks = ['' for _ in range(len(csv.index))]
+        yticks = ['' for _ in range(len(csv.index))]
+
+        y = '{:1.2f}'.format(csv["tempo"].ix[0])
+        yticks[0] = y    
+        for i in range(1, len(yticks)):        
+            y = '{:1.2f}'.format(csv["tempo"].ix[i])
+            yticks[i] = y            
+        ax.set_yticklabels(yticks)
+
+        # m = csv["tempo"].mean()
+        # mx = csv["tempo"].max()
+        
+        x = '{:1.0f}'.format(csv["quantidade"].ix[0])
+        xticks[0] = x    
+        for i in range(1, len(yticks)):        
+            x = '{:1.0f}'.format(csv["quantidade"].ix[i])
+            xticks[i] = x            
+        ax.set_xticklabels(xticks)
+
+        file_name, _ = csv_name.split('.')
+        ax.set_title("Compras - {} - Total de compras {:1.0f}".format(file_name, csv["quantidade"].sum()))
+        ax.set_xlabel("Quantidade de compras - {}".format(file_name))
+        ax.set_ylabel("Tempo gasto em segundos")
+        # plt.draw()
+        plt.savefig('{}.png'.format(file_name))
+
 
     def criar_relatorio(self):
 
@@ -648,10 +721,24 @@ class Blockchain:
         media_tempo_cartao = csv_cartao["tempo"].mean()
         desvio_tempo_cartao = csv_cartao["tempo"].std()
         total_tempo_cartao = csv_cartao["tempo"].sum()
+        
+        csv_comprasop1 = pd.read_csv('comprasOP1.csv', sep=';', encoding='ISO-8859-1')
+        csv_comprasop1 = csv_comprasop1.drop(csv_comprasop1.index[0])
+        tempo_medio_comprasop1 = csv_comprasop1["tempo"].mean()        
+        media_comprasop1_segundo = csv_comprasop1["quantidade"].ix[1]/tempo_medio_comprasop1
+        tempo_medio_total_comprasop1 = csv_comprasop1["quantidade"].sum()/csv_comprasop1["tempo"].sum()
+        erro_total_comprasop1 = csv_comprasop1["fracasso"].sum()
 
+        csv_comprasop2 = pd.read_csv('comprasOP2.csv', sep=';', encoding='ISO-8859-1')
+        csv_comprasop2 = csv_comprasop2.drop(csv_comprasop2.index[0])
+        tempo_medio_comprasop2 = csv_comprasop2["tempo"].mean()
+        media_comprasop2 = csv_comprasop2["quantidade"].mean()        
+        media_comprasop2_segundo = csv_comprasop2["quantidade"].mean()/tempo_medio_comprasop2
+        tempo_medio_total_comprasop2 = csv_comprasop2["quantidade"].sum()/csv_comprasop2["tempo"].sum()
+        erro_total_comprasop2 = csv_comprasop2["fracasso"].sum()
 
         try:
-            nome_pdf = "RELATORIO_{}".format(datetime.today()) #input('Informe o nome do PDF: ')
+            nome_pdf = "./report/relatorio_{}".format(datetime.today()) #input('Informe o nome do PDF: ')
             pdf = canvas.Canvas('{}.pdf'.format(nome_pdf))
             pdf.setTitle(nome_pdf)
 
@@ -722,6 +809,40 @@ class Blockchain:
             pdf.drawString(60, 590, '- Tempo médio de uma transação com falhas - {:1.3f} segundos'.format(cartao_erro_media))
             pdf.drawImage("cartoes.png", 66, 100, width=640/1.3, height=480/1.3)
             pdf.showPage()
+
+            pdf.setFont("Helvetica-Bold", 16)
+            pdf.drawString(165, 760, 'TESTE – COMPRAS OP1')
+            pdf.setFont("Helvetica", 14)
+            pdf.drawString(50, 710, 'Para o teste “COMPRAS OP1" foram obtidas as seguintes métricas:')
+            pdf.drawString(60, 690, '- Total de compras: {:1.0f}. Compras realizadas: {:1.0f}. Total de falhas: {:1.0f}'.format(csv_comprasop1["quantidade"].sum(), csv_comprasop1["quantidade"].sum()-erro_total_comprasop1, erro_total_comprasop1))
+            pdf.drawString(60, 670, '- Tempo médio de compras de {:1.0f} em {:1.0f} Transações – Tx: {:1.3f} s'.format(100, 100, tempo_medio_comprasop1))
+            pdf.drawString(60, 650, '- Média de compras por segundo (De um total de 100): {:1.3f} s.'.format(media_comprasop1_segundo))
+            pdf.drawString(60, 630, '- Média de compras por segundo (De um total de {}): {:1.3f} s.'.format(csv_comprasop1["quantidade"].sum(), tempo_medio_total_comprasop1))
+            pdf.drawImage("comprasOP1.png", 66, 100, width=640/1.3, height=480/1.3)
+            pdf.showPage()
+
+            pdf.setFont("Helvetica-Bold", 16)
+            pdf.drawString(165, 760, 'TESTE – COMPRAS OP2')
+            pdf.setFont("Helvetica", 14)
+            pdf.drawString(50, 710, 'Para o teste “COMPRAS OP2" foram obtidas as seguintes métricas:')
+            pdf.drawString(60, 690, '- Total de compras: {:1.0f}. Compras realizadas: {:1.0f}. Total de falhas: {:1.0f}'.format(csv_comprasop2["quantidade"].sum(), csv_comprasop2["quantidade"].sum()-erro_total_comprasop2, erro_total_comprasop2))
+            pdf.drawString(60, 670, '- Tempo médio de compras de quantidade aleatoria: Transações - : {:1.3f} s'.format(tempo_medio_comprasop2))
+            pdf.drawString(60, 650, '- Média de compras por segundo (De um total medio de {}): {:1.3f} s.'.format(media_comprasop2 ,media_comprasop2_segundo))
+            pdf.drawString(60, 630, '- Média de compras por segundo (De um total de {}): {:1.3f} s.'.format(csv_comprasop2["quantidade"].sum(), tempo_medio_total_comprasop2))
+            pdf.drawImage("comprasOP2.png", 66, 100, width=640/1.3, height=480/1.3)
+            pdf.showPage()
+
+            pdf.setFont("Helvetica-Bold", 16)
+            pdf.drawString(165, 760, 'TESTE – COMPRAS OP3')
+            pdf.setFont("Helvetica", 14)
+            pdf.drawString(50, 710, 'Para o teste “COMPRAS OP3" foram obtidas as seguintes métricas:')
+            pdf.drawString(60, 690, '- Total de compras: {:1.0f}. Compras realizadas: {:1.0f}. Total de falhas: {:1.0f}'.format(csv_comprasop2["quantidade"].sum(), csv_comprasop2["quantidade"].sum()-erro_total_comprasop2, erro_total_comprasop2))
+            pdf.drawString(60, 670, '- Tempo médio de compras de quantidade aleatoria: Transações - : {:1.3f} s'.format(tempo_medio_comprasop2))
+            pdf.drawString(60, 650, '- Média de compras por segundo (De um total medio de {}): {:1.3f} s.'.format(media_comprasop2 ,media_comprasop2_segundo))
+            pdf.drawString(60, 630, '- Média de compras por segundo (De um total de {}): {:1.3f} s.'.format(csv_comprasop2["quantidade"].sum(), tempo_medio_total_comprasop2))
+            pdf.drawImage("comprasOP2.png", 66, 100, width=640/1.3, height=480/1.3)
+            pdf.showPage()
+
 
             pdf.save()
 
