@@ -1,4 +1,6 @@
 pandas
 futures
 requests
+reportlab
 Unidecode
+matplotlib

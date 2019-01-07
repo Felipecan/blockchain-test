@@ -22,17 +22,17 @@ bc.logger.info('Ponto de início no csv: {}'.format(arguments.inicio))
 bc.logger.info('Quantidade igual a: {}'.format(arguments.quantidade))
 
 
-# if arguments.inicio == 0:
-#     bc.cadastrar_encargos()
-#     bc.cadastrar_regras()    
-# else:
-#     bc.logger.warning('Os encargos e regras já foram cadastrados?!')
+if arguments.inicio == 0:
+    bc.cadastrar_encargos()
+    bc.cadastrar_regras()    
+else:
+    bc.logger.warning('Os encargos e regras já foram cadastrados?!')
 
-# i = timeit.default_timer()
-# bc.logger.info('Iniciando cadastro de emissor(es)')
-# bc.cadastrar_emissor("Renner")
-# f = timeit.default_timer()
-# bc.logger.info('Emissor cadastrado em: {}s'.format(f-i))
+i = timeit.default_timer()
+bc.logger.info('Iniciando cadastro de emissor(es)')
+bc.cadastrar_emissor("Renner")
+f = timeit.default_timer()
+bc.logger.info('Emissor cadastrado em: {}s'.format(f-i))
 
 i = timeit.default_timer()
 bc.logger.info('Iniciando cadastro de portado(res)')

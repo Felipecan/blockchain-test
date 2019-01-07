@@ -738,7 +738,7 @@ class Blockchain:
         erro_total_comprasop2 = csv_comprasop2["fracasso"].sum()
 
         try:
-            nome_pdf = "./report/relatorio_{}".format(datetime.today()) #input('Informe o nome do PDF: ')
+            nome_pdf = "./reports/relatorio_{}".format(datetime.today()) #input('Informe o nome do PDF: ')
             pdf = canvas.Canvas('{}.pdf'.format(nome_pdf))
             pdf.setTitle(nome_pdf)
 

@@ -1,0 +1,13 @@
+#python trashs
+__pycache__
+
+# Files from virtualenv
+bin/
+include/
+lib/
+
+# Files from logs, reports, csvs and graph
+reports/
+logs/
+#csvs/
+#graph/

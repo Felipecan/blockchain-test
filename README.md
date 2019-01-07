@@ -1,50 +1,64 @@
 ## Repositório destinado aos scripts de testes - Conductor Lab
 
-### Dependências necessárias para executar os scripts:
+### Configurando e instalando as dependências necessárias para executar os scripts:
 
+Instale o pip3 e em seguida o virtualenv
 ```sh
+$ sudo apt-get install python3-tk
 $ sudo apt-get install python3-pip
+$ sudo pip3 install virtualenv
 ```
-Dentro da pasta raiz do repositório clonado...
+
+Criando um ambiente virtual para melhor organização:
+```sh
+$ which python3
+caminho/para/python3
+```
+```sh
+$ virtualenv --python='caminho/para/python3' conductor-blockchain-test
+```
+
+Para ativar o ambiente virtual:
+```sh
+$ source conductor-blockchain-test/bin/activate
+```
+
+Agora, dentro da pasta raiz do repositório clonado (aqui, a mesma pasta do ambiente virtual)...
 
 ```sh
-$ pip3 install -r requirements.txt
+$ pip install -r requirements.txt
 ```
 
 ### Execução dos sripts
 
-Existe dois scripts na pasta: 
-- [cadastrar_cartoes.py](cadastrar_cartoes.py): realiza o cadastro de um emissor, cadastro de determinada quantidade de portadores e cartões. 
-- [compras_tests.py](compras_tests.py): realiza determinada quantidade de compras a partir dos cartões previamente cadastrados e a quantidade desejada.
+Existe dois arquivos importantes na pasta: 
+- [Blockchain.py](Blockchain.py): classe responsável por lidar com as funções que acessam a blockchain e assim testá-la. Serve de apoio para os scripts de teste. 
+- [register_ihc.py](register_ihc.py): realiza cadastros de encargos, regras, emissor(es), portadores, cartões e realiza as compras. O script em questão faz todo o teste da blockchain de uma vez e por fim, gera um relatório em PDF e um log de tudo que aconteceu durate o teste.
 
 Para executar os testes de fato:
 
-[arquivo .csv contendo as pessoas para cadastrar](https://drive.google.com/file/d/1yrQv9hopJK63oVTV2QMF1OHISb81AtXB/view?usp=sharing)
+[**arquivo .csv contendo as pessoas para popular a blockchain**](https://drive.google.com/file/d/1yrQv9hopJK63oVTV2QMF1OHISb81AtXB/view?usp=sharing)
 
 ```sh
-$ python3 cadastrar_cartoes.py -csv caminho/para/csv --inicio inicio_csv --quantidade n_de_cartoes_desejado
-$ python3 compras_tests.py --quantidade n_de_cartoes_para_compras
+$ python register_ihc.py -csv caminho/para/csv --inicio inicio_csv --quantidade n_de_cartoes_desejado
 ```
 
 Mais informações das funções acima:
 
 ```sh
-$ python3 cadastrar_cartoes.py -h
+$ python register_ihc.py -h
 ```
 
 ou
 
 
 ```sh
-$ python3 compras_tests.py -h
+$ python Blockchain.py -h
 ```
 
-#### Alguns relatórios:
-##### Teste Alterório
-- 3 máquinas:
-    - 1 peer, 1 ordenador, 1 couchdb em cada
-    - Emissor criado: Renner
-    - Portadores criados: 200 portadores
-    - Cartoes criados: 200 cartoes
-    - 16.237s
-    - Criação do bloco: 10 transações ou 2 segundos
+Para desativar o ambiente virtual
+```sh
+$ deactivate
+```
+
+Obs: Os sripts, mesmo que funcionais, ainda estão sendo aprimorados para um melhor aproveitamento geral. Também vale ressaltar que este tutorial vai ser atualizado conforme essas alterações, acrescentando mais informações que ainda não foram inclusas.
