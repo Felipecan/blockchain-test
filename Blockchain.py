@@ -33,9 +33,19 @@ class Blockchain:
 
 
     def cadastrar_encargo(self, payload):
+        '''
+            Descrição:
+                O método cadastra um único encargo, que é passado no parâmetro(payload).
+                Geralmente, o método é usado dentro de outro método mais generalista.
 
-        # api = "http://localhost:4000/api"
-        # r = requests.post(api + "/org.conductor.encargo.CadastrarEncargoGenerico", data=json.dumps(payload), headers={'content-type': 'application/json'})
+            Utilização:
+                cadastrar_encargo(payload_encargo)
+
+            Parâmetros:
+                payload:
+                    O parâmetro carrega as informações que vão ser enviadas no método para a blockchain.
+        '''   
+        
         r = requests.post(self.api_url + "/org.conductor.encargo.CadastrarEncargoGenerico", data=json.dumps(payload), headers={'content-type': 'application/json'})
         if(r.status_code >= 200 and r.status_code < 300):
             self.logger.debug('Encargo {} cadastrado'.format(payload['nome']))
@@ -44,14 +54,23 @@ class Blockchain:
 
 
     def cadastrar_encargos(self):
+        '''
+            Descrição:
+                O método cadastra automáticamente todos os encargos necessários para o teste.
+                Porém, se for necessário mais algum, o mesmo deverá ser acrescentado aqui.
+
+            Utilização:
+                cadastrar_encargos()          
+        '''   
 
         self.logger.info('Cadastrando encargos...')
+        # Esse primeiro encargo tem como nome "EMPTY", pois ele auxilia no tratamento das regras cujo encargo não exista (Não tem nada especificando), no momento do post.
         payload_encargo = {
             "$class": "org.conductor.encargo.CadastrarEncargoGenerico",
             "nome": "EMPTY",
             "taxa": 0,
             "expressaoSelecao": "totalPago >= totalFatura",
-            "expressaoExecucao": " "
+            "expressaoExecucao": " " # o valor " " para essa expressão vai indicar que é um valor nulo, no momento do post desse encargo.
         }
         self.cadastrar_encargo(payload_encargo)
 
@@ -112,8 +131,18 @@ class Blockchain:
 
 
     def cadastrar_regra(self, payload):
-        # api = "http://localhost:4000/api"
-        # r = requests.post(api + "/org.conductor.regra.CadastrarRegraGenerica", data=json.dumps(payload), headers={'content-type': 'application/json'})    
+        '''
+            Descrição:
+                O método cadastra somente uma regra por vez. De maneira geral, é utilizado dentro de outro método somente.
+
+            Utilização:
+                cadastrar_regra(payload)
+
+            Parâmetros:
+                payload:
+                    Parâmetro contendo as informações da regra a ser salva.
+        '''           
+        
         r = requests.post(self.api_url + "/org.conductor.regra.CadastrarRegraGenerica", data=json.dumps(payload), headers={'content-type': 'application/json'})    
         if(r.status_code >= 200 and r.status_code < 300):
             self.logger.debug('Regra cadastrada: {}'.format(payload))
@@ -122,9 +151,20 @@ class Blockchain:
 
 
     def cadastrar_regras(self):
+        '''
+            Descrição:
+                O método cadastra todas as regras necessárias para o teste. Basicamente associa os encargos.
+                Caso seja necessário adicionar uma nova regra, deve ser criada aqui dentro.
+
+            Utilização:
+                cadastrar_regras()            
+        '''   
 
         self.logger.info('Iniciando cadastramento das regras...')
         self.logger.info('GET nos encargos genéricos...')
+
+        # Busca na blockchain os encargos que vão ser associados as regras. Em seguida salva seus IDs para serem inseridos no payload.
+        # Obs: Se duas regras forem adicionadas com o mesmo nome, não se sabe ainda como vai ser quando for pegar seus IDs. rsrs
         encargos_json = requests.get(self.api_url + "/org.conductor.encargo.EncargoGenerico").json()    
         pagoutudoID = ''
         inadID = ''
@@ -153,7 +193,7 @@ class Blockchain:
         payload_regra = {
             "$class": "org.conductor.regra.CadastrarRegraGenerica",
             "prioridade": 4,  
-            "encargosDepende": ["resource:org.conductor.encargo.EncargoGenerico#" + str(emptyID)],
+            "encargosDepende": ["resource:org.conductor.encargo.EncargoGenerico#" + str(emptyID)], # eesse é um encargo espcial, pois indica que ele deve ser vazio na blockchain.
             "encargosBloqueia": ["resource:org.conductor.encargo.EncargoGenerico#" + str(inadID)],
             "encargosExecutar": ["resource:org.conductor.encargo.EncargoGenerico#" + str(pagoutudoID)]
         }
@@ -208,16 +248,29 @@ class Blockchain:
 
 
     def cadastrar_emissor(self, emissor):
-        
-        # api = "http://localhost:4000/api"
-        emissores_json = requests.get(self.api_url + "/org.conductor.emissor.Emissor").json()   
+        '''
+            Descrição:
+                O método cadastra um único emissor por vez. Esse método é único e só usado ele mesmo (Não como auxiliar de outros métodos).
 
+            Utilização:
+                cadastrar_emissor(nome_emissor)
+
+            Parâmetros:
+                emissor:
+                    O parâmetro deve conter o nome do emissor a ser cadastrado.
+        '''   
+        
+        # Acessa a blockchain e busca todos os emissores já cadastrados lá. Em seguida verifica se de fato há algum emissor cadastrado.
+        emissores_json = requests.get(self.api_url + "/org.conductor.emissor.Emissor").json()           
         if(len(emissores_json) > 0):            
             emissores = []
             for em in emissores_json:
                 emissores.append(em['emissorId'])
 
+            # Se já houve algum emissor cadastrado, verifica na lista de nomes do emissor (emissorId) se tem um emissor com o nome do emissor que vai ser cadastrado.
             if(not(emissor in emissores)):
+
+                # Ao cadastrar um nome emissor, antes é preciso vincular os encargos a ele. Então busca-se na blockchain a lista e em seguida o coloca no payload.
                 encargos_json = requests.get(self.api_url + "/org.conductor.encargo.EncargoGenerico").json()
                 encargos = []
                 for encargo in encargos_json:
@@ -234,6 +287,7 @@ class Blockchain:
             else:
                 self.logger.warning('Emissor {} já cadastrado anteriormente.'.format(emissor))
         else:
+            # Cadastro do primeiro emissor da blockchain...
             encargos_json = requests.get(self.api_url + "/org.conductor.encargo.EncargoGenerico").json()
             encargos = []
             for encargo in encargos_json:
@@ -250,6 +304,21 @@ class Blockchain:
 
 
     def cadastrar_portador(self, payload):    
+        '''
+            Descrição:
+                O método cadastra um único portador na blockchain. Normalmente, utlizando dentro de outro método mais geral.
+
+            Utilização:
+                cadastrar_portador(payload)
+
+            Parâmetros:
+                payload:
+                    Parâmetro contendo as informações do portadores a ser cadastrado na blockchain.
+
+            Retorno:
+                A funcao retorna a resposta do método request.post(...), contendo as informações sobre a requisição.
+        '''   
+
         return requests.post(self.api_url + '/org.conductor.portador.CadastrarPortador', data=json.dumps(payload), headers={'content-type': 'application/json'})
 
         
@@ -257,7 +326,7 @@ class Blockchain:
         '''
             Descrição:
                 A função lê um arquvo csv e cria certa quantidade de portadores na Blockchain. 
-                Por enquanto a função está limitada a criação de no máximo 200 portadores.
+                Por enquanto a função está limitada a criação de no máximo 351749 portadores, de acordo com o csv sugerido.
 
             Utilização:
                 cadastrar_portadores('caminho/para/arquivo/nome.csv', 0, 20)
@@ -281,14 +350,16 @@ class Blockchain:
             self.logger.error('Não foi possivel ler o arquivo[{}] corretamente. Encerrando programa...'.format(csv_file))
             return 0    
         # len == 351749
+        # verifica se a quantidade inserida de onde começar no csv e a quantidade a ser cadastrada não ultrapassa a quantidade de linhas no csv.
         if (inicio+quantidade) > csv_file.__len__():
             self.logger.error('Quantidade maior que a capacidade do csv')
             return 0
-
+        
         if inicio < 0:
             self.logger.warning('Variável início menor que zero. Mudando para valor igual 0.')
             inicio = 0
-
+        
+        # exclui linhas no csv onde tenham cpf e nome invalidos, assim como cpsf duplicados.
         csv_file = csv_file.dropna(subset=['cpf', 'nome'])
         csv_file = csv_file.drop_duplicates(subset=['cpf'])
 
@@ -305,22 +376,27 @@ class Blockchain:
             'endereco': 'CI'
         }
 
-        temp = 0
+        temp = 0 # Auxiliar que controla quando vai começar a ler o csv de fato.
         total = quantidade
-        time_beg = timeit.default_timer()
+        time_beg = timeit.default_timer() # variável que captura o início do tempo para cada 10 portador cadastrado.
         for row in csv_file.itertuples():
-            time_ii = timeit.default_timer()
+            time_ii = timeit.default_timer() # A variável usada somente no log, serve pra calcular o tempo para cada portador com erro.
+
+            # Se a quantidade zerar, é porque já tentou adicionar a quantidade de portadores pedido.
             if quantidade == 0:
                 break
-
+            
+            # Controle de onde deve começar a cadastrar os portadores, até que temp seja igual a inicio, o csv só pula as linhas.
             if temp < inicio:
                 temp += 1
                 time_beg = timeit.default_timer()
                 continue
 
+            # muda o valor * do cpf para zero e separa a string com o nome completo em duas.
             cpf = row.cpf.replace('*', '0')
             nome = row.nome.split(' ')
             
+            # carrega o payload com os dados atuais...
             payload_portador['nome'] = unidecode(nome[0])
             payload_portador['cpf'] = cpf
             if len(nome) == 1:
@@ -340,10 +416,12 @@ class Blockchain:
                 self.logger.debug('Não foi possível cadastradar o portador: {}'.format(payload_portador['nome']))            
                 self.logger.debug('Codigo de erro: {}. ERRO: {}'.format(r.status_code, r.json()['error']['message']))
             
+            # Aqui é feito a escrita no csv para o gráficos e afins... Vale salientar que é escrito a cada 10 cadastro.            
             if(quantidade%10 == 0):
-                time_end = timeit.default_timer()                
+                time_end = timeit.default_timer() # Tempo do último décimo portador cadastrado.               
                 file_portadores.write(str(total-quantidade)+";"+str(time_end-time_beg)+'\n')            
-                time_beg = time_end        
+                # atualiza o tempo inicial para os próximos 10       
+                time_beg = time_end 
 
         self.dado_relatorio["portadores_total"] = total
         self.logger.info('{} portadores cadastrados de {}'.format(len(cpfs), total))
@@ -352,7 +430,22 @@ class Blockchain:
         return cpfs
 
 
-    def cadastrar_cartao(self, payload):    
+    def cadastrar_cartao(self, payload):  
+        '''
+            Descrição:
+                O método cadastra somente um cartão para o o usuário em questão. É usada principalmente dentro do método mais geral de cadastro.
+
+            Utilização:
+                cadastrar_cartoes(payload_card)
+
+            Parâmetros:
+                payload:
+                    O parâmetro deve conter as informções para cadastrar um cartão na Blockchain.
+
+            Retorno:
+                O método retorna a resposta do request.post(...).
+        '''    
+
         return requests.post(self.api_url + '/org.conductor.cartaocredito.CadastrarCartao', data=json.dumps(payload), headers={'content-type': 'application/json'})    
 
     def cadastrar_cartoes(self, cpfs):
@@ -381,6 +474,8 @@ class Blockchain:
         file_cartoes.write("quantidade;tempo\n")
         file_cartoes.write("0;0\n")
         
+        # Busca na blockchain os cartões já cadastrados, se não houve, cria simplesmente a quantidade de cartões aletórios.
+        # Caso já tenha cartões, é feito uma tentativa de embaralhar mais os números e criar cartões únicos.
         c = self.get_cards()
         if len(c) <= 0:
             cards = random.sample(range(1000, 3000), len(cpfs))
@@ -405,16 +500,17 @@ class Blockchain:
             'anoValidade': 2050
         }
 
-        crs = []
+        crs = [] # A lista vai conter ao final todos os cards cadastrados de fato na blockchain.
         time_beg = timeit.default_timer()
         for i in range(len(cpfs)):   
-            time_ii = timeit.default_timer()  
+            time_ii = timeit.default_timer() # A variável usada somente no log, serve pra calcular o tempo para cada portador com erro.
+
             payload_cartao['portador'] = 'resource:org.conductor.portador.Portador#'+cpfs[i]
             payload_cartao['numCartao'] = str(cards[i])
 
             r = self.cadastrar_cartao(payload_cartao)            
             if(r.status_code >= 200 and r.status_code < 300):  
-                crs.append(cards[i])
+                crs.append(cards[i]) # caso tenha sido adicionado com sucesso, insere na lista final o cartão em questão.
                 self.logger.debug('{}/{} cadastrado. Cartao: {}'.format(len(crs), len(cards), cards[i]))  
                 self.dado_relatorio["cartoes_cadastrados"] += 1                
             else:
@@ -422,10 +518,11 @@ class Blockchain:
                 self.logger.debug('Não foi possível cadastradar o cartao: {}'.format(cards[i]))
                 self.logger.debug('Codigo de erro: {}. ERRO: {}'.format(r.status_code, r.json()['error']['message']))                        
                 
-
+            # Aqui é feito a escrita no csv para o gráficos e afins... Vale salientar que é escrito a cada 10 cadastro. 
             if((i+1)%10 == 0):
-                time_end = timeit.default_timer()
+                time_end = timeit.default_timer() 
                 file_cartoes.write(str(i+1)+";"+str(time_end-time_beg)+"\n") 
+                # atualiza o tempo incial, para o final atual.
                 time_beg = time_end  
         
         self.dado_relatorio["cartoes_total"] = len(cards)
@@ -437,10 +534,29 @@ class Blockchain:
 
 
     def realizar_compra(self, id, card):
+        '''
+            Descrição:
+                O método simplesmente faz compras com determinado cartão.
+
+            Utilização:
+                cadastrar_portadores(0, card_number/list).
+
+            Parâmetros:
+                id:
+                    Parâmetro que passa um id qualquer. Esse parâmetro serve somente pra visualisar melhor as threads lançadas.
+                card:
+                    Parametro deve conter o número do cartão ou uma lista de cartões em que vai ser feito uma compra, pois o restante das informações são padrão.
+                
+            Retorno:
+                O método retorna a resposta do método request.post(...) da requisição.
+        '''   
+
         dt = str(datetime.utcnow().isoformat()) 
         valor = random.randint(20, 200)                        
         parcelas = str(random.randint(1, 6))    
         payload = []
+
+        # cria todos os payloads com os dados para cada cartão a ser feita a compra.
         for i in range(len(card)):
             payload.append({
                 '$class': 'org.conductor.compra.RealizarCompra',
@@ -463,20 +579,38 @@ class Blockchain:
 
 
     def realizar_compras_1(self, cards):  
+        '''
+            Descrição:
+                O método realiza diversas compras paralelamente. 
+                Por exemplo, caso tenha 100 cartões, o método dispara 100 threads com uma compra cada.
+
+            Utilização:
+                cadastrar_portadores(card_list).
+
+            Parâmetros:                
+                cards:
+                    Parametro deve conter uma lista de cartões em que vai ser feito uma compra, pois o restante das informações são padrão.
+        '''   
+
         file_compras = open('comprasOP1.csv', 'a')     
-        time_beg = timeit.default_timer()
+        time_beg = timeit.default_timer() # tempo inicial para fazer todas as compras.
+
+        # Cria um pool de threas com a quantidade igual a quantidade de cartões passados na chamada do método.
         with ThreadPoolExecutor(max_workers=len(cards)) as executor:        
             self.logger.debug('Disparando {} threads'.format(len(cards)))
-            jobs=[]             
+            jobs=[]                         
             for i in range(len(cards)):            
+                # criando cada trabalho com o método de realizar compras e jogando no pool de threads para serem disparadas.
                 job=executor.submit(self.realizar_compra, i, cards[i:i+1])
                 jobs.append(job)   
 
+        # Espera todas as threads terminarem e calcula o tempo final.
         wait(jobs, timeout=None)
         time_end = timeit.default_timer()
 
         success = 0
         failure = 0
+        # de acordo com a respota, calcula a taxa de sucesso e falha.
         for response in jobs:        
             if(response.result(timeout=None).status_code >= 200 and response.result(timeout=None).status_code < 300):   
                 success += 1
@@ -491,26 +625,44 @@ class Blockchain:
 
 
     def realizar_compras_2(self, cards):
+        '''
+            Descrição:
+                O método realiza diversas compras paralelamente. 
+                Por exemplo, caso tenha 100 cartões, o método dispara sempre 10 threads, porém com uma quantidade compra aleatória com base
+                na quantidade de cartões. No caso de 100, será no máximo 10 cartões por thread.
+
+            Utilização:
+                cadastrar_portadores(card_list).
+
+            Parâmetros:                
+                cards:
+                    Parametro deve conter uma lista de cartões em que vai ser feito uma compra, pois o restante das informações são padrão.
+        '''   
+
         file_compras = open('comprasOP2.csv', 'a')
-        time_beg = timeit.default_timer()
+        time_beg = timeit.default_timer() # tempo inicial para fazer todas as compras.
+
+        # Cria um pool de threas com a quantidade 10.
         with ThreadPoolExecutor(max_workers=10) as executor:
             self.logger.debug('Disparando {} threads'.format(10))
             jobs=[]
-            q_cards = math.floor(len(cards)/10)
+            q_cards = math.floor(len(cards)/10) # calcula a quantidade de cartões máximas para cada thread, com base na quantidade de cartões da chamada do método.
             c = cards
-            tx = 0
+            tx = 0 # grava a quantidae de cartão para cada thread.
             for i in range(10):
-                j = random.randint(1,q_cards)
+                j = random.randint(1,q_cards) # escolhe um número aleatório para cada thread, onde o máximo é o q_cards.
                 tx += j
                 job=executor.submit(self.realizar_compra, i, c[0:j])
-                c = c[j:]
+                c = c[j:] # atualiza os cards, de onde foi escolhido aleatoriamente, até o final.
                 jobs.append(job)            
         
+        # Espera todas as threads finalizarem para calcular o tempo..
         wait(jobs, timeout=None)
         time_end = timeit.default_timer()
 
         success = 0
         failure = 0
+        # de acordo com a respota, calcula a taxa de sucesso e falha.
         for response in jobs:        
             if(response.result(timeout=None).status_code >= 200 and response.result(timeout=None).status_code < 300):   
                 success += 1
@@ -600,6 +752,18 @@ class Blockchain:
 
     ################## auxiliares ##################
     def configure_logger(self, logger_name='run.log'):
+        '''
+            Descrição:
+                O método configura o log que será salvo ao final dos testes.
+
+            Utilização:
+                configure_logger("run.log").
+
+            Parâmetros:                
+                logger_name:
+                    Parâmetro opcional de como será salvo o log.
+        '''   
+
         self.logger = logging.getLogger('__main__')        
         self.logger.setLevel(logging.DEBUG)        
         fh = logging.FileHandler('./logs/run_{}.log'.format(datetime.today()), 'w')        
@@ -624,6 +788,7 @@ class Blockchain:
             Retorno:
                 Retorna uma lista de strings com todos os cartões cadastrados.
         '''  
+
         cards = []
         r = requests.get(self.api_url + '/org.conductor.cartaocredito.CartaoCredito')
         jsons = r.json()        
@@ -633,29 +798,61 @@ class Blockchain:
         return cards    
 
     def get_compras(self):
+        '''
+            Descrição:
+                A função acessa a API e retorna todos as comras realizadas.
+
+            Utilização:
+                get_compras()
+
+            Retorno:
+                Retorna uma lista com todos as compras em formato json.
+        '''  
+
         r = requests.get(self.api_url + '/org.conductor.compra.Compra')
         jsons = r.json()
         return jsons
 
     def get_portadores(self):
+        '''
+            Descrição:
+                A função acessa a API e retorna todos os poratadores cadastrados.
+
+            Utilização:
+                get_portadores()
+
+            Retorno:
+                Retorna uma lista com todos os portadores em formato json.
+        '''  
+
         r = requests.get(self.api_url + '/org.conductor.portador.Portador')
         jsons = r.json()
         return jsons  
 
     def gerar_grafico_pc(self, csv_name):
+        '''
+            Descrição:
+                Método auxiliar para gerar o gŕafico para portadores e cartões.
+
+            Utilização:
+                gerar_grafico_pc("portadores.csv")            
+        '''  
+
         csv = pd.read_csv(csv_name, sep=';', encoding='ISO-8859-1')
-        xticks = ['' for _ in range(len(csv.index))]
+        
+        xticks = ['' for _ in range(len(csv.index))] # cria uma lista de acordo com a quantidade de linhas com valor ""
         v = 50
         xticks[0] = '0'
-        for i in range(1, len(xticks)):
+        for i in range(1, len(xticks)): # substituindo o valor '' a cada 50, onde no csv seria a cada 5 linha.
             if(i%5 == 0):
                 xticks[i] = str(v)
                 v += 50
+
         ax = csv.plot.bar(x='quantidade', y='tempo', rot=0, color="blue", alpha=0.7, width=0.4)
         m = csv["tempo"].mean()
         mx = csv["tempo"].max()
-        ax.set_ylim(m-15.5, mx+10.5)
-        ax.set_xticklabels(xticks)
+        ax.set_ylim(m-15.5, mx+10.5) # calcula e set o melhor espaço de valores plotado no gráfico.
+        ax.set_xticklabels(xticks) 
         file_name, _ = csv_name.split('.')
         ax.set_title("Cadastro de {}".format(file_name))
         ax.set_xlabel("Quantidade de transações para cadastro{}".format(file_name))
@@ -665,13 +862,22 @@ class Blockchain:
 
 
     def gerar_grafico_c(self, csv_name):
-    
+        '''
+            Descrição:
+                Método auxiliar para gerar o gŕafico para as compras.
+
+            Utilização:
+                gerar_grafico_c("compras.csv")            
+        '''  
+
         csv = pd.read_csv(csv_name, sep=';', encoding='ISO-8859-1')
         ax = csv.plot.bar(x='quantidade', y='tempo', rot=0, color="red", alpha=0.7, width=0.4)
         
+        # cria uma lista de acordo com a quantidade de linhas com valor ""
         xticks = ['' for _ in range(len(csv.index))]
         yticks = ['' for _ in range(len(csv.index))]
 
+        # preenche os pontos em y de acordo com o csv.
         y = '{:1.2f}'.format(csv["tempo"].ix[0])
         yticks[0] = y    
         for i in range(1, len(yticks)):        
@@ -682,6 +888,7 @@ class Blockchain:
         # m = csv["tempo"].mean()
         # mx = csv["tempo"].max()
         
+        # preenche os pontos em x de acordo com o csv.
         x = '{:1.0f}'.format(csv["quantidade"].ix[0])
         xticks[0] = x    
         for i in range(1, len(yticks)):        
@@ -698,6 +905,13 @@ class Blockchain:
 
 
     def criar_relatorio(self):
+        '''
+            Descrição:
+                Método auxiliar para gerar o relatório final de testes.
+
+            Utilização:
+                criar_relatorio()            
+        ''' 
 
         if(len(self.dado_relatorio["portadores_erro_medio"]) <= 0):
             portador_erro_media = 0

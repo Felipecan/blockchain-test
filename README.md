@@ -53,7 +53,9 @@ ou
 
 
 ```sh
-$ python Blockchain.py -h
+$ python
+>> import Blockchain
+>> help(Blockchain) 
 ```
 
 Para desativar o ambiente virtual
@@ -61,4 +63,4 @@ Para desativar o ambiente virtual
 $ deactivate
 ```
 
-Obs: Os sripts, mesmo que funcionais, ainda estão sendo aprimorados para um melhor aproveitamento geral. Também vale ressaltar que este tutorial vai ser atualizado conforme essas alterações, acrescentando mais informações que ainda não foram inclusas.
+Obs: Os scripts, mesmo que funcionais, ainda estão sendo aprimorados para um melhor aproveitamento geral. Também vale ressaltar que este tutorial vai ser atualizado conforme essas alterações, acrescentando mais informações que ainda não foram inclusas.

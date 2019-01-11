@@ -7,21 +7,23 @@ import argparse
 import matplotlib.pyplot as plt
 from Blockchain import Blockchain
 
+# criação e configuração dos argumentos de entrada do script. Ao iniciar, será carregada essas informações que podem ser passdas por linha de comando.
 parser = argparse.ArgumentParser(description='Script para popular a Blockchain com emissor, portadores e cartões')
-
 parser.add_argument('-csv', action='store', dest='csv_name', default='pessoas.csv', required=False, help='Nome/caminho do .csv com os dados para popular a Blockchain.')
 parser.add_argument('--inicio', action='store', type=int, dest='inicio', default='0', required=False, help='Ponto de onde deve iniciar o csv.')
 parser.add_argument('--quantidade', action='store', type=int, dest='quantidade', default='10', required=False, help='Quantidade de pessoas para adicionar.')
 arguments = parser.parse_args()
 
-
+# cria um obj do tipo Blockchain para fazer os testes e gerar os arquivos finais.
 bc = Blockchain()
 
 bc.logger.info('Arquivo .csv: {}'.format(arguments.csv_name))
 bc.logger.info('Ponto de início no csv: {}'.format(arguments.inicio))
 bc.logger.info('Quantidade igual a: {}'.format(arguments.quantidade))
 
-
+# Por equanto, sempre que começar os testes, supõe-se que o valor de "inicio" seja 0.
+# Assim, irá cadastrasr os encargos e regras.
+# Deposi disso, o valor pode ser outro, pois as regras e encargos só precisam ser salvos uma única vez, no caso.
 if arguments.inicio == 0:
     bc.cadastrar_encargos()
     bc.cadastrar_regras()    
@@ -57,8 +59,8 @@ if(isinstance(cards, list)):
     bc.logger.info('Iniciando transacoes de compra...')
     bc.logger.info('Quantidade de cartoes total: {}'.format(len(cards)))
 
-    op = 1
-    q = 50
+    op = 1 # variável contra o tipo de compra
+    q = 50 # temp
     all_cards = cards
     for i in range(2):        
         file_compras = open('comprasOP{}.csv'.format(op), 'w')
