@@ -1,5 +1,6 @@
-#python trashs
+#python trashs and others
 __pycache__
+*.csv
 
 # Files from virtualenv
 bin/
