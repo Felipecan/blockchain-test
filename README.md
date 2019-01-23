@@ -2,31 +2,23 @@
 
 ### Configurando e instalando as dependências necessárias para executar os scripts:
 
-Instale o pip3 e em seguida o virtualenv
-```sh
-$ sudo apt-get install python3-tk
-$ sudo apt-get install python3-pip
-$ sudo pip3 install virtualenv
-```
+Instale o [minconda3](https://conda.io/en/latest/miniconda.html) de acordo com o seu sistema.
 
-Criando um ambiente virtual para melhor organização:
-```sh
-$ which python3
-caminho/para/python3
-```
-```sh
-$ virtualenv --python='caminho/para/python3' conductor-blockchain-test
-```
+Clone o repositório atual, nele ira conter o arquivo [cdtlab-env.yml](cdtlab-env.yml), que descreve as configurações de ambiente que será usada.
 
-Para ativar o ambiente virtual:
-```sh
-$ source conductor-blockchain-test/bin/activate
-```
-
-Agora, dentro da pasta raiz do repositório clonado (aqui, a mesma pasta do ambiente virtual)...
+No terminal, dê o seguinte comando para criar o ambiente:
 
 ```sh
-$ pip install -r requirements.txt
+$ conda env create --file cdtlab-env.yml
+```
+
+Após a criado o ambiente, para ativá-lo use o comando no terminal do Linux:
+```sh
+$ source activate cdtlab-env
+```
+Para Windows:
+```sh
+$ activate cdtlab-env
 ```
 
 ### Execução dos sripts
@@ -58,9 +50,14 @@ $ python
 >> help(Blockchain) 
 ```
 
-Para desativar o ambiente virtual
+
+
+Para desativar o ambiente virtual:
+```sh
+$ source deactivate
+```
+Ou no Windows:
 ```sh
 $ deactivate
 ```
-
 Obs: Os scripts, mesmo que funcionais, ainda estão sendo aprimorados para um melhor aproveitamento geral. Também vale ressaltar que este tutorial vai ser atualizado conforme essas alterações, acrescentando mais informações que ainda não foram inclusas.
