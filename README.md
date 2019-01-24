@@ -2,7 +2,7 @@
 
 ### Configurando e instalando as dependências necessárias para executar os scripts:
 
-Instale o [minconda3](https://conda.io/en/latest/miniconda.html) de acordo com o seu sistema.
+Instale o [Minconda3](https://conda.io/en/latest/miniconda.html) de acordo com o seu sistema.
 
 Clone o repositório atual, nele ira conter o arquivo [cdtlab-env.yml](cdtlab-env.yml), que descreve as configurações de ambiente que será usada.
 
